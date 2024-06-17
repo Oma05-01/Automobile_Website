@@ -3,7 +3,8 @@ from . models import Car, Client
 from django.shortcuts import render, redirect
 from django.core.files.storage import FileSystemStorage
 from django.contrib.auth import authenticate, login, logout
-from django.contrib.auth.models import User, Group, Permission
+from django.contrib.auth.models import User
+
 
 # Create your views here.
 

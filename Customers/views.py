@@ -1,9 +1,8 @@
 from .models import Customer
 from clients.models import Car
-from django.shortcuts import render
 from django.contrib.auth import authenticate, login, logout
-from django.contrib.auth.models import User, Group, Permission
-from django.shortcuts import render, get_object_or_404, redirect
+from django.contrib.auth.models import User
+from django.shortcuts import render, redirect
 
 # Create your views here.
 
