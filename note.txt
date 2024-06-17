@@ -1,0 +1,2 @@
+Havent created search page yet, need to do some adjusting to the page with the youtube video
+setting up picture upload for client
