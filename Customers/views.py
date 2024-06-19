@@ -3,7 +3,8 @@ from clients.models import Car
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
 from django.shortcuts import render, redirect
-
+from django.contrib.auth import get_user_model
+from .utils import generate_verification_token
 # Create your views here.
 
 
@@ -162,3 +163,17 @@ def search_car(request, car):
         return render(request, '')
 
     return render(request, '', {'searched': searched_car, 'seen_cars': seen_car})
+
+
+def verify_email(request, token):
+    User = get_user_model()
+    try:
+        profile = User.profile.objects.get(verification_token=token)
+        profile.user.is_active = True
+        profile.user.save()
+        # Optional: Clear verification token or mark the email as verified
+        profile.verification_token = ''
+        profile.save()
+        return render(request, 'verification_success.html')
+    except User.profile.DoesNotExist:
+        return render(request, 'verification_failure.html')

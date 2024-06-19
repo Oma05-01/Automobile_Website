@@ -1,5 +1,6 @@
 from django.urls import path
 from . import views
+from .views import verify_email
 
 urlpatterns = [
     path('home/<str:icon>', views.customer_home, name='home'),
@@ -9,5 +10,5 @@ urlpatterns = [
     path('Customer_change_password/', views.customer_change_password, name='change_password'),
     path('Car-/<str:car>/', views.car_detail, name='item_detail'),
     path('search_car/<str:car>', views.search_car, name='search_car'),
-
+    path('verify/<str:token>/', verify_email, name='verify_email'),
 ]
