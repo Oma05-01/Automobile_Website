@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Schedule Test Drive</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <style>
+        .flatpickr-disabled {
+            background: #e0e0e0 !important;
+            color: #a0a0a0 !important;
+            cursor: not-allowed !important;
+        }
+    </style>
+</head>
+<body>
+    <h1>Schedule a Test Drive</h1>
+    <input type="text" id="datepicker">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const unavailableDates = JSON.parse('{{ unavailable_dates|escapejs }}');
+            const today = new Date().toISOString().split('T')[0];
+            unavailableDates.push(today); // Add today to unavailable dates
+            flatpickr("#datepicker", {
+                disable: unavailableDates,
+                dateFormat: "Y-m-d",
+                minDate: today, // Disable all dates before today
+                onDayCreate: function(dObj, dStr, fp, dayElem) {
+                    if (unavailableDates.includes(dayElem.dateObj.toISOString().split('T')[0])) {
+                        dayElem.className += " flatpickr-disabled";
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+</html>
