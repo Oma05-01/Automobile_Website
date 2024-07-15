@@ -1,6 +1,5 @@
 import datetime
 from . models import Car, Client
-from django.shortcuts import render, redirect
 from django.core.files.storage import FileSystemStorage
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
@@ -10,19 +9,18 @@ from django.utils.html import strip_tags
 from django.contrib.sites.shortcuts import get_current_site
 import random
 import string
-from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect
-from .models import Profile
-from django.core.exceptions import ObjectDoesNotExist
+from .models import ClientProfile
+from django.http import JsonResponse
+from django.contrib.auth import get_user_model
 
 # Create your views here.
 
 
 def client_home(request):
 
+    return render(request, 'client_Home.html')
     # name = Client.objects.filter(client_name=icon)
-
-    return render(request, 'client_Home.html',)
 
 
 def client_login(request):
@@ -38,15 +36,19 @@ def client_login(request):
             if it != '':
                 user = authenticate(username=user_, password=pass_)
 
-                if user is not None and user.is_active:
+                check_client = Client.objects.get(username=user_).username
+                print(user_)
+                print(check_client)
+                if user.username == check_client:
                     login(request, user)
+                    print('user is client')
                     return redirect('CLhome')
                 else:
                     # Return an 'invalid login' error message.
                     return render(request, 'login.html', {'error_message': 'Invalid login credentials'})
             else:
                 msg = 'Please, ' + str(it) + ' should be filled'
-                return render(request, 'Client_login.html', {'msg': msg})
+                return JsonResponse({'status': 'error', 'msg': msg})
 
     return render(request, 'client_login.html')
 
@@ -66,17 +68,25 @@ def client_register(request):
         if not all([first_name, last_name, username, email, phone_number, password1, password2]):
             error_message = 'All fields are required'
             print('field')
-            return render(request, 'error.html', {'error': error_message})
+            return JsonResponse({'status': 'error', 'msg': error_message})
+
+        if User.objects.filter(username=username).exists():
+            msg = "This username is already taken UVuTu.!MyY#b5yB"
+            return JsonResponse({'status': 'error', 'msg': msg})
+        #
+        # if User.objects.filter(email=email).exists():
+        #     msg = "This email is already registered"
+        #     return JsonResponse({'status': 'error', 'msg': msg})
 
         if len(password1) < 8:
             msg = "Your password is too short"
             print('length')
-            return render(request, 'error.html', {'msg': msg})
+            return JsonResponse({'status': 'error', 'msg': msg})
 
         if password1 != password2:
             msg = "Your passwords didn't match"
             print('match')
-            return render(request, 'error.html', {'msg': msg})
+            return JsonResponse({'status': 'error', 'msg': msg})
 
         # Check password strength
         count1 = count2 = count3 = count4 = 0
@@ -93,23 +103,39 @@ def client_register(request):
         if not all([count1, count2, count3, count4]):
             msg = "Your password isn't strong enough"
             print('here')
-            return render(request, 'error.html', {'msg': msg})
+            return JsonResponse({'status': 'error', 'msg': msg})
 
         # Create user without activation
-        user = User.objects.create_user(username=username, email=email, password=password1, first_name=first_name, last_name=last_name)
-        user.is_active = False  # Mark user as inactive until email is verified
-        user.is_client = True
+        user = User.objects.create_user(username=username, email=email, password=password1, first_name=first_name,
+                                        last_name=last_name)
+        user.is_active = False
         user.save()
-        print('created')
+
+        client = Client.objects.create(user=user, First_name=first_name, Last_name=last_name, email=email,
+                                       phone_number=phone_number, is_client=True, username=username)
+
+        client.save()
 
         # Send verification email
         send_verification_email(request, user)
-        print('okay')
+        print('done')
 
         # Redirect to a page informing the user to check their email
-        return render(request, 'registration_pending.html')
+        return render(request, 'client_registration_pending.html')
 
     return render(request, 'Client_register.html')
+
+
+def check_username(request):
+    username = request.GET.get('username')
+    is_taken = User.objects.filter(username=username).exists()
+    return JsonResponse({'is_taken': is_taken})
+
+
+def check_email(request):
+    email = request.GET.get('email')
+    is_taken = User.objects.filter(email=email).exists()
+    return JsonResponse({'is_taken': is_taken})
 
 
 def generate_verification_code():
@@ -119,8 +145,15 @@ def generate_verification_code():
 
 def send_verification_email(request, user):
     code = generate_verification_code()
-    user.profile.verification_code = code  # Save the code in the user's profile
-    user.profile.save()
+
+    if hasattr(user, 'client_profile'):
+        profile = user.client_profile
+    else:
+        print("error")
+        raise AttributeError('User has no profile associated')
+
+    profile.verification_code = code
+    profile.save()
 
     current_site = get_current_site(request)
     subject = 'Activate Your Account'
@@ -131,46 +164,6 @@ def send_verification_email(request, user):
     })
     plain_message = strip_tags(message)
     send_mail(subject, plain_message, 'from@example.com', [user.email], html_message=message)
-
-
-def verify_code(request):
-    if request.method == 'POST':
-        verification_code = request.POST.get('verification_code')
-
-        try:
-            # Find the profile with the matching verification code
-            profile = Profile.objects.get(verification_code=verification_code)
-
-            # Retrieve the associated user
-            user = profile.user
-
-            # Ensure user is not already active
-            if not user.is_active:
-                # Activate the user
-                user.is_active = True
-                user.save()
-                profile.is_verified = True
-                profile.save()
-                print('User verified and activated')
-                return redirect('Client_login')  # Redirect to login page after verification
-
-            else:
-                # User is already active
-                print('User is already active')
-
-        except Profile.DoesNotExist:
-            # Handle incorrect verification code scenario
-            context = {'error_message': 'Incorrect verification code. Please try again.'}
-            return render(request, 'error.html', context)
-
-    # If the request method is not POST, render registration pending or another appropriate template
-    return render(request, 'registration_pending.html')
-
-
-
-def error_page(request):
-    error_message = "Oops! Something went wrong."
-    return render(request, 'error.html', {'error': error_message})
 
 
 def client_logout(request):
@@ -190,7 +183,6 @@ def client_change_password(request):
 
         if pass1 == "" or pass2 == "":
             error = "Both fields Required"
-            print(request.user)
             return render(request, 'back/error.html', {'error': error})
 
         user = authenticate(username=request.user, password=pass1)
@@ -229,24 +221,25 @@ def client_change_password(request):
 
 
 def new_post(request):
-
     if not request.user.is_authenticated:
         return redirect('login')
 
     if request.method == 'POST':
         name = request.POST.get('name')
         Desc = request.POST.get('description')
+        available_for_testing = request.POST.get('available_for_testing')
+        test_location = request.POST.get('test_location')
+        price = float(request.POST.get('price'))
 
         date = datetime.datetime.now()
         day = date.day
         year = date.year
         month = date.month
 
-        date1 = str(year) + '/' + str(month) + '/' + str(day)
+        date1 = f"{year}/{month}/{day}"
 
-        if name == "":
+        if not name or not Desc or not available_for_testing:
             error = 'All Fields Required'
-            # for error to show in the html page, it needs to be placed in a dict {'error': error}
             return render(request, 'back/error.html', {'error': error})
 
         try:
@@ -256,28 +249,33 @@ def new_post(request):
             url = fs.url(filename)
 
             if str(myfile.content_type).startswith('image'):
-
-                if myfile.size < 5000000:
-
-                    b = Car(Car_name=name, picname=filename, picurl=url, date=date1, Description=Desc)
+                if myfile.size < 500000000:
+                    b = Car(
+                        Car_name=name,
+                        pic_name=str(filename),
+                        picurl=str(url),
+                        date=date1,
+                        Description=Desc,
+                        Available_for_testing=available_for_testing,
+                        test_location=test_location,
+                        price=price
+                    )
                     b.save()
-
-                    return redirect('Post_list')
+                    return redirect('Car_listings')
                 else:
-                    fs = FileSystemStorage()
-                    fs.delete(myfile)
-
-                    error = 'Your file Is Bigger Than 5Mb'
+                    fs.delete(filename)
+                    error = 'Your file is bigger than 5MB'
+                    print(error)
                     return render(request, 'back/error.html', {'error': error})
             else:
-                fs = FileSystemStorage()
                 fs.delete(filename)
-
-                error = 'Your file Is Not Supported'
+                error = 'Your file is not supported'
+                print(error)
                 return render(request, 'back/error.html', {'error': error})
 
-        except:
-            error = 'INVALID'
+        except Exception as e:
+            error = f'INVALID: {str(e)}'
+            print(e)
             return render(request, 'back/error.html', {'error': error})
 
     return render(request, 'New_post.html')
@@ -291,7 +289,6 @@ def edit_post(request, pk):
     if len(Car.objects.filter(pk=pk)) == 0:
         error = 'Car Not Found'
         return render(request, 'back/error.html', {'error': error})
-
 
     car_ = Car.objects.get(pk=pk)
 
@@ -374,4 +371,42 @@ def delete_post(request, pk):
     return redirect('news_list')
 
 
+def car_list(request):
 
+    return render(request, 'car_list.html')
+
+
+def client_verify_code(request):
+    if request.method == 'POST':
+        verification_code = request.POST.get('verification_code')
+
+        try:
+            # Find the profile with the matching verification code
+            profile = ClientProfile.objects.get(verification_code=verification_code)
+            print('nawa')
+            print(profile)
+
+            # Retrieve the associated user
+            user = profile.user
+
+            # Ensure user is not already active
+            if not user.is_active:
+                # Activate the user
+                user.is_active = True
+                user.save()
+                profile.is_verified = True
+                profile.save()
+                print('yes?')
+                return redirect('Client_login')  # Redirect to login page after verification
+            else:
+                # User is already active
+                context = {'error_message': 'User is already active.'}
+                return render(request, 'error.html', context)
+
+        except ClientProfile.DoesNotExist:
+            # Handle incorrect verification code scenario
+            context = {'error_message': 'Incorrect verification code. Please try again.'}
+            return render(request, 'error.html', context)
+
+    # If the request method is not POST, render registration pending or another appropriate template
+    return render(request, 'client_verify.html')

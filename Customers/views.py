@@ -1,18 +1,29 @@
+import datetime
 from .models import Customer
 from clients.models import Car
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
+from django.core.mail import send_mail
+from django.template.loader import render_to_string
+from django.utils.html import strip_tags
+from django.contrib.sites.shortcuts import get_current_site
+import random
+import string
+from datetime import date
+from django.http import JsonResponse
+from .models import CustomerProfile
+from Dates.models import Dates
+import json
 from django.shortcuts import render, redirect
 from django.contrib.auth import get_user_model
-from .utils import generate_verification_token
 # Create your views here.
 
 
-def customer_home(request, icon):
+def customer_home(request):
 
-    person = Customer.objects.filter(customer_name=icon)
+    # person = Customer.objects.filter(customer_name=icon)
 
-    return render(request, 'Customer_Home.html', {'customer': person})
+    return render(request, 'Customer_Home.html')
 
 
 def customer_login(request):
@@ -27,9 +38,12 @@ def customer_login(request):
             if it != '':
                 user = authenticate(username=user_, password=pass_)
 
-                if user:
+                if user is not None and user.is_active:
                     login(request, user)
-                    return redirect('home')
+                    return redirect('CUhome')
+                else:
+                    # Return an 'invalid login' error message.
+                    return render(request, 'error.html', {'error_message': 'Invalid login credentials'})
             else:
                 msg = 'Please, ' + str(it) + ' should be filled'
                 return render(request, 'Customer_login.html', {'msg': msg})
@@ -37,35 +51,42 @@ def customer_login(request):
 
 
 def customer_register(request):
-
     if request.method == "POST":
-        First_name = request.method.POST.get('First_name')
-        Last_name = request.method.POST.get('First_name')
-        username = request.method.POST.get('First_name')
-        email = request.method.POST.get('First_name')
-        phone_number = request.method.POST.get('First_name')
-        date_created = request.method.POST.get('First_name')
+        # Get form data
+        first_name = request.POST.get('First_name')
+        last_name = request.POST.get('Last_name')
+        username = request.POST.get('username')
+        email = request.POST.get('email')
+        phone_number = request.POST.get('phone_number')
         password1 = request.POST.get('password1')
         password2 = request.POST.get('password2')
 
-        details = [First_name, Last_name, email, phone_number, date_created, password1, password2]
+        # Validate form data
+        if not all([first_name, last_name, username, email, phone_number, password1, password2]):
+            error_message = 'All fields are required'
+            print('field')
+            return JsonResponse({'status': 'error', 'msg': error_message})
 
-        for detes in details:
-            if detes == "":
-                error_message = 'The ' + str(detes) + " field is required"
-                return render(request, """this is supposed to be a pop up message""", {'error': error_message})
+        if User.objects.filter(username=username).exists():
+            msg = "This username is already taken UVuTu.!MyY#b5yB"
+            return JsonResponse({'status': 'error', 'msg': msg})
+        #
+        # if User.objects.filter(email=email).exists():
+        #     msg = "This email is already registered"
+        #     return JsonResponse({'status': 'error', 'msg': msg})
 
         if len(password1) < 8:
             msg = "Your password is too short"
-            return render(request, '', {'msg': msg})
+            print('length')
+            return JsonResponse({'status': 'error', 'msg': msg})
 
         if password1 != password2:
             msg = "Your passwords didn't match"
-            return render(request, '', {'msg': msg})
+            print('match')
+            return JsonResponse({'status': 'error', 'msg': msg})
 
-        count1 = 0; count2 = 0; count3 = 0; count4 = 0
-        check = [count1, count2, count3, count4]
-
+        # Check password strength
+        count1 = count2 = count3 = count4 = 0
         for i in password1:
             if '0' <= i <= '9':
                 count1 = 1
@@ -76,17 +97,110 @@ def customer_register(request):
             if '!' <= i <= '(':
                 count4 = 1
 
-        for i in check:
-            if i == 0:
-                msg = "Your password isn't strong enough"
-                return render(request, '', {'msg': msg})
+        if not all([count1, count2, count3, count4]):
+            msg = "Your password isn't strong enough"
+            print('here')
+            return JsonResponse({'status': 'error', 'msg': msg})
 
-        if len(User.objects.filter(username=username)) == 0 and len(User.objects.filter(email=email)) == 0:
+        # Create user without activation
+        user = User.objects.create_user(username=username, email=email, password=password1, first_name=first_name,
+                                        last_name=last_name)
+        user.is_active = False
+        user.save()
+        print('created')
 
-            b = User.objects.create_user(username=username, email=email, password=password1)
-            b.save()
+        customer = Customer.objects.create(user=user, First_name=first_name, Last_name=last_name, email=email,
+                                           phone_number=phone_number, is_customer=True, username=username)
 
-    return redirect('login.html')
+        customer.save()
+
+        # Send verification email
+        send_verification_email(request, user)
+        print('okay')
+
+        # Redirect to a page informing the user to check their email
+        return render(request, 'customer_registration_pending.html')
+
+    return render(request, 'Customer_register.html')
+
+
+def check_username(request):
+    username = request.GET.get('username')
+    is_taken = User.objects.filter(username=username).exists()
+    return JsonResponse({'is_taken': is_taken})
+
+
+def check_email(request):
+    email = request.GET.get('email')
+    is_taken = User.objects.filter(email=email).exists()
+    return JsonResponse({'is_taken': is_taken})
+
+
+def generate_verification_code():
+    code = ''.join(random.choices(string.digits, k=6))
+    return code
+
+
+def send_verification_email(request, user):
+    code = generate_verification_code()
+
+    if hasattr(user, 'customer_profile'):
+        profile = user.customer_profile
+    else:
+        print("error")
+        raise AttributeError('User has no profile associated')
+
+    profile.verification_code = code
+    profile.save()
+
+    current_site = get_current_site(request)
+    subject = 'Activate Your Account'
+    message = render_to_string('verification_email.html', {
+        'user': user,
+        'domain': current_site.domain,
+        'code': code,
+    })
+    plain_message = strip_tags(message)
+    send_mail(subject, plain_message, 'from@example.com', [user.email], html_message=message)
+
+
+def customer_verify_code(request):
+    if request.method == 'POST':
+        verification_code = request.POST.get('verification_code')
+
+        try:
+            # Find the profile with the matching verification code
+            profile = CustomerProfile.objects.get(verification_code=verification_code)
+
+            # Retrieve the associated user
+            user = profile.user
+
+            # Ensure user is not already active
+            if not user.is_active:
+                # Activate the user
+                user.is_active = True
+                user.save()
+                profile.is_verified = True
+                profile.save()
+                return redirect('customer_login')  # Redirect to login page after verification
+            else:
+                # User is already active
+                context = {'error_message': 'User is already active.'}
+                return render(request, 'error.html', context)
+
+        except CustomerProfile.DoesNotExist:
+            # Handle incorrect verification code scenario
+            context = {'error_message': 'Incorrect verification code. Please try again.'}
+            print('here')
+            return render(request, 'error.html', context)
+
+    # If the request method is not POST, render registration pending or another appropriate template
+    return render(request, 'customer_verify.html')
+
+
+def error_page(request):
+    error_message = "Oops! Something went wrong."
+    return render(request, 'error.html', {'error': error_message})
 
 
 def customer_logout(request):
@@ -144,7 +258,7 @@ def customer_change_password(request):
             error = "INCORRECT PASSWORD"
             return render(request, 'back/error.html', {'error': error})
 
-    return render(request, 'Client_Home.html')
+    return render(request, 'Customer_Home.html')
 
 
 def car_detail(request, car):
@@ -152,6 +266,13 @@ def car_detail(request, car):
     item = Car.objects.all(Car_name=car)
 
     return render(request, '', {'item': item})
+
+
+def schedule_date(request):
+
+    unavailable_dates = list(Dates.objects.values_list('Scheduled_date', flat=True))
+    unavailable_dates_json = json.dumps([d.isoformat() for d in unavailable_dates])
+    return render(request, 'schedule_date.html', {'unavailable_dates': unavailable_dates_json})
 
 
 def search_car(request, car):
@@ -165,15 +286,4 @@ def search_car(request, car):
     return render(request, '', {'searched': searched_car, 'seen_cars': seen_car})
 
 
-def verify_email(request, token):
-    User = get_user_model()
-    try:
-        profile = User.profile.objects.get(verification_token=token)
-        profile.user.is_active = True
-        profile.user.save()
-        # Optional: Clear verification token or mark the email as verified
-        profile.verification_token = ''
-        profile.save()
-        return render(request, 'verification_success.html')
-    except User.profile.DoesNotExist:
-        return render(request, 'verification_failure.html')
+
