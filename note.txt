@@ -1,2 +1,104 @@
-Havent created search page yet, need to do some adjusting to the page with the youtube video
+Havent created search page yet, need to do some adjusting to the page with the youtube video???
 setting up picture upload for client
+
+
+CLIENT
+1. Dashboard for Car Owners
+A dedicated dashboard where car owners can manage their listings, view leasing inquiries, and track the status of each car.
+Sections:
+My Listings: View, edit, or delete active car listings.
+Leasing Requests: View pending or confirmed leasing requests from clients.
+Earnings/Revenue: Track income generated from car rentals, maybe with a basic payment report.
+Car History: View the history of leasing (e.g., rental duration, reviews, etc.).
+
+2. Car Listing Management
+Add New Listing: Allow owners to add new cars to the platform with detailed information (model, description, photos, price, etc.).
+Edit Listing: Allow owners to edit existing listings — update details like availability, pricing, photos, and car condition.
+Car Availability Calendar: Allow car owners to set availability dates or block certain dates when the car cannot be rented.
+Price Adjustment: Allow owners to change the rental price dynamically based on demand or availability.
+Manage Car Location: Owners can update the pickup location and test drive locations.
+
+3. Rental Request & Booking System
+View Client Applications: Car owners can view clients who have shown interest in leasing their cars.
+Approve/Reject Requests: Provide an interface where owners can approve or reject lease requests.
+Lease Duration: Let the car owner set the minimum and maximum lease duration (e.g., daily, weekly, monthly).
+Client Reviews/Rating: Allow car owners to rate clients (if applicable), and clients can leave reviews after completing a rental.
+Communication: Enable messaging between the car owner and clients to ask questions, finalize bookings, and discuss rental terms.
+
+4. Booking & Payment Integration
+Booking Confirmation: Once a client has been approved, send booking confirmations with details of the car, rental period, price, and pickup location.
+Payment Processing: Integrate a payment gateway so that the car owner can receive payments for the leases (you may want to consider escrow or partial payments for security).
+Payment History: Display the owner’s transaction history — how much has been earned, any outstanding payments, and a payment schedule.
+
+5. Notifications for Car Owners
+New Rental Request: Alert the car owner when a client requests to rent their car.
+Booking Confirmation/Update: Notify the owner when a booking is confirmed or modified.
+Car Maintenance Reminders: If the car owner is required to maintain their vehicles, automatic reminders for routine checkups (like oil changes, tire checks, etc.) could be helpful.
+
+6. Car Insurance & Lease Agreements
+Insurance Verification: Allow the car owner to upload and manage insurance documents for the vehicle to ensure everything is covered during the lease period.
+Rental Agreement Generation: Automatically generate rental agreements based on the booking details, or allow the car owner to upload their own standard agreements. This could include terms and conditions for the client (e.g., car usage, deposit, insurance coverage).
+
+7. Reporting and Analytics
+Earnings & Expenses Reports: Generate simple reports on the car owner's earnings, including lease prices, commissions, and expenses (e.g., car maintenance).
+Car Performance Analytics: Provide insights into how often each car is rented, rental income generated, and how popular each listing is.
+
+8. Owner Profile
+Owner’s Profile: A profile page for car owners to manage their details, verify identity, and keep track of their cars, bookings, and earnings.
+Rating & Reviews for Owners: Allow clients to leave feedback for the car owner after the rental period has ended (e.g., condition of the car, the owner's communication, etc.).
+
+9. Car Condition & Maintenance Tracking
+Track Car Maintenance: Allow car owners to log maintenance tasks, repairs, and service history for each car.
+Damage Reporting: When a client returns the car, allow the owner to report damages or issues, and possibly set up a claim process if damage occurred during the lease period.
+Maintenance Reminders: Remind car owners when it’s time for scheduled car maintenance, based on mileage or time intervals.
+
+10. Multi-Car Management
+Multiple Listings: If the car owner has more than one car, provide the option to manage multiple listings from the same dashboard.
+Bulk Updates: Allow owners to update pricing, availability, or other details across multiple cars at once.
+
+
+CUSTOMER
+
+1. Car Browsing and Filtering
+Advanced Filters: Allow customers to filter car listings by various criteria such as price range, car type (e.g., sedan, SUV, electric), model year, mileage, location, or availability.
+Sorting: Enable sorting of the car listings by factors like price (low to high, high to low), most recent, and customer rating.
+Car Comparison: Allow customers to select multiple cars and compare them side-by-side in terms of price, features, and specifications.
+
+2. Car Reservation and Booking
+Reservation Feature: Allow customers to select a car and book it for a certain period (e.g., by hour, day, or week). After booking, the system should display the booking details, the total cost, and a "Confirm Reservation" button.
+Availability Check: Ensure that a car is available on the selected dates and times. If the car is unavailable, customers should be notified, and an alternative car should be suggested.
+Calendar Integration: Show a calendar with available and unavailable dates for each car to allow customers to pick the right time for renting.
+
+3. Customer Reviews and Ratings
+Rate Cars: After renting a car, customers should be able to leave reviews and ratings. This could include ratings on aspects like car condition, owner responsiveness, and overall satisfaction.
+Display Reviews: Show customer reviews on the car detail page to help other potential customers make informed decisions.
+
+4. Payment Integration
+Payment Gateway: Implement a payment system (e.g., Stripe, PayPal, or another local payment provider) to allow customers to pay for their car rentals online.
+Cost Breakdown: Show the breakdown of the rental costs (e.g., base price, insurance, taxes, additional services, etc.).
+
+5. Booking History
+Past Reservations: Allow customers to view their past bookings, including the car details, rental period, and payment status.
+Future Bookings: Display a list of upcoming rentals and allow users to cancel or modify reservations.
+
+6. Loyalty Program or Discounts
+Loyalty Rewards: Offer loyalty points or discounts to customers who frequently rent cars. For example, customers could receive a discount on future bookings based on the number of cars they have rented.
+Promo Codes: Allow customers to apply promo codes during the checkout process to receive discounts.
+
+7. Customer Profile Management
+Profile Information: Allow customers to view and update their profile information such as name, phone number, address, and payment methods.
+Notifications: Provide an option for customers to enable or disable notifications (e.g., email or SMS) for booking updates, promotions, etc.
+Driver’s License Verification (Optional): For added security, allow customers to upload a copy of their driver’s license for verification before they can rent a car.
+
+8. Support and FAQ Section
+Customer Support: Provide a way for customers to contact support in case of issues with bookings, payments, or other aspects of the service. This could be through email, chat, or a contact form.
+FAQs: Include a Frequently Asked Questions section that answers common queries about booking, payment, car selection, and other aspects of the service.
+
+9. Notifications and Alerts
+Booking Confirmation and Reminders: Send customers booking confirmation emails, along with reminders of their upcoming rentals.
+Car Availability Alerts: Notify customers when a car they were interested in becomes available for booking.
+Late Return Alerts: If a customer is late in returning a car, send them a reminder.
+
+10. Admin/Customer Dashboard (Optional)
+Analytics Dashboard: Provide customers with a dashboard where they can see an overview of their rentals, payments, reviews, and any pending actions.
+Admin View: An admin interface that allows car owners to manage their cars, view booking histories, and set car availability.

@@ -12,7 +12,7 @@ import string
 from datetime import date
 from django.http import JsonResponse
 from .models import CustomerProfile
-from Dates.models import Dates
+from Admins.models import Dates
 import json
 from django.shortcuts import render, redirect
 from django.contrib.auth import get_user_model
