@@ -1,6 +1,6 @@
 import datetime
-from .models import Customer
-from clients.models import Car
+from clients.models import *
+from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
 from django.core.mail import send_mail
@@ -9,13 +9,24 @@ from django.utils.html import strip_tags
 from django.contrib.sites.shortcuts import get_current_site
 import random
 import string
-from datetime import date
+from django.core.mail import send_mail
 from django.http import JsonResponse
-from .models import CustomerProfile
+from .models import *
 from Admins.models import Dates
 import json
-from django.shortcuts import render, redirect
+from django.db.models import Q
+from django.contrib.auth.decorators import login_required
+from django.utils import timezone
+from datetime import timedelta
 from django.contrib.auth import get_user_model
+from django.shortcuts import render, get_object_or_404, redirect
+import stripe
+from django.conf import settings
+from django.http import HttpResponseForbidden
+from .forms import *
+
+
+stripe.api_key = settings.STRIPE_SECRET_KEY
 # Create your views here.
 
 
@@ -261,11 +272,16 @@ def customer_change_password(request):
     return render(request, 'Customer_Home.html')
 
 
-def car_detail(request, car):
+def car_detail(request, car_id):
+    car = get_object_or_404(Car, id=car_id)
 
-    item = Car.objects.all(Car_name=car)
+    # Get all reviews for the car
+    reviews = car.reviews.all()
 
-    return render(request, '', {'item': item})
+    return render(request, 'car/car_detail.html', {
+        'car': car,
+        'reviews': reviews
+    })
 
 
 def schedule_date(request):
@@ -275,15 +291,414 @@ def schedule_date(request):
     return render(request, 'schedule_date.html', {'unavailable_dates': unavailable_dates_json})
 
 
-def search_car(request, car):
+def search_car(request):
+    # Initialize an empty queryset
+    cars = Car.objects.all()
 
-    if request.method == "POST":
-        searched_car = request.POST.get('searched')
-        seen_car = Car.objects.filter(Car_name__contains=searched_car)
+    # Handle search query
+    if 'searched' in request.GET:
+        searched_car = request.GET.get('searched')
+        cars = cars.filter(Car_name__icontains=searched_car)  # Case insensitive search
     else:
-        return render(request, '')
+        searched_car = ""
 
-    return render(request, '', {'searched': searched_car, 'seen_cars': seen_car})
+    # Apply filters based on form input (if any)
+    if 'car_type' in request.GET:
+        car_type = request.GET.get('car_type')
+        cars = cars.filter(car_type=car_type)
+
+    if 'min_price' in request.GET and 'max_price' in request.GET:
+        min_price = request.GET.get('min_price')
+        max_price = request.GET.get('max_price')
+        cars = cars.filter(price_per_day__gte=min_price, price_per_day__lte=max_price)
+
+    if 'year' in request.GET:
+        year = request.GET.get('year')
+        cars = cars.filter(year=year)
+
+    if 'mileage' in request.GET:
+        mileage = request.GET.get('mileage')
+        cars = cars.filter(mileage__lte=mileage)
+
+    if 'location' in request.GET:
+        location = request.GET.get('location')
+        cars = cars.filter(location__icontains=location)
+
+    if 'available_for_testing' in request.GET:
+        available_for_testing = request.GET.get('available_for_testing')
+        cars = cars.filter(Available_for_testing=available_for_testing)
+
+    # Sorting
+    if 'sort_by' in request.GET:
+        sort_by = request.GET.get('sort_by')
+        if sort_by == 'price_low_to_high':
+            cars = cars.order_by('price_per_day')
+        elif sort_by == 'price_high_to_low':
+            cars = cars.order_by('-price_per_day')
+        elif sort_by == 'most_recent':
+            cars = cars.order_by('-date')
+        elif sort_by == 'customer_rating':
+            cars = cars.order_by('-rating')  # Assuming you have a rating field
+
+    # Car comparison (optional)
+    selected_cars = request.session.get('selected_cars', [])
+    if 'compare_cars' in request.GET:
+        compare_car_ids = request.GET.getlist('compare_cars')
+        selected_cars = Car.objects.filter(id__in=compare_car_ids)
+        request.session['selected_cars'] = [car.id for car in selected_cars]
+
+    return render(request, 'car_search.html', {
+        'searched_car': searched_car,
+        'cars': cars,
+        'selected_cars': selected_cars
+    })
+
+
+@login_required
+def select_car(request, car_id):
+    car = get_object_or_404(Car, id=car_id)
+
+    # Handle the form submission for booking
+    if request.method == 'POST':
+        start_date = request.POST.get('start_date')
+        end_date = request.POST.get('end_date')
+
+        # Convert the dates from string to datetime
+        start_date = timezone.datetime.strptime(start_date, '%Y-%m-%d').date()
+        end_date = timezone.datetime.strptime(end_date, '%Y-%m-%d').date()
+
+        # Check car availability
+        if Reservation.objects.filter(car=car, start_date__lt=end_date, end_date__gt=start_date).exists():
+            error = "The car is not available for the selected dates."
+            return render(request, 'car/select_car.html', {'car': car, 'error': error})
+
+        # Calculate the total price
+        num_days = (end_date - start_date).days
+        total_price = num_days * car.price_per_day
+
+        # Create a new reservation
+        reservation = Reservation(
+            car=car,
+            renter=request.user,
+            start_date=start_date,
+            end_date=end_date,
+            total_amount=total_price,
+            status='pending'
+        )
+        reservation.save()
+
+        return render(request, 'car/booking_confirmation.html', {'reservation': reservation})
+
+    return render(request, 'car/select_car.html', {'car': car})
+
+
+@login_required
+def booking_confirmation(request, reservation_id):
+    reservation = get_object_or_404(Reservation, id=reservation_id)
+
+    return render(request, 'car/booking_confirmation.html', {'reservation': reservation})
+
+
+def availability_calendar(request, car_id):
+    car = get_object_or_404(Car, id=car_id)
+
+    # Get all reservations for this car
+    reservations = Reservation.objects.filter(car=car)
+
+    # Generate a list of booked dates for the car
+    booked_dates = []
+    for reservation in reservations:
+        start_date = reservation.start_date
+        end_date = reservation.end_date
+        while start_date <= end_date:
+            booked_dates.append(start_date)
+            start_date += timedelta(days=1)
+
+    # Pass the list of booked dates to the template
+    return render(request, 'car/availability_calendar.html', {'car': car, 'booked_dates': booked_dates})
+
+
+@login_required
+def leave_review(request, reservation_id):
+    reservation = get_object_or_404(Reservation, id=reservation_id)
+
+    # Check if the user is the renter of the car in the reservation
+    if reservation.renter != request.user:
+        return redirect('home')  # You can redirect them to an error page or home if not the renter
+
+    # Handle POST request to save the review
+    if request.method == 'POST':
+        rating = int(request.POST.get('rating'))
+        review_text = request.POST.get('review_text')
+
+        # Ensure rating is between 1 and 5
+        if rating < 1 or rating > 5:
+            return render(request, 'car/leave_review.html', {'error': 'Rating must be between 1 and 5', 'reservation': reservation})
+
+        # Create the review
+        review = Review(
+            car=reservation.car,
+            renter=request.user,
+            reservation=reservation,
+            rating=rating,
+            review_text=review_text
+        )
+        review.save()
+
+        # Redirect to the car detail page
+        return redirect('car_detail', car_id=reservation.car.id)
+
+    return render(request, 'car/leave_review.html', {'reservation': reservation})
+
+
+@login_required
+def checkout(request, reservation_id):
+    reservation = Reservation.objects.get(id=reservation_id)
+
+    # Calculate total amount
+    reservation.calculate_total_amount()
+    amount = int(reservation.total_amount * 100)  # Amount in cents for Stripe
+
+    # Create a Stripe PaymentIntent for secure payments
+    payment_intent = stripe.PaymentIntent.create(
+        amount=amount,
+        currency="usd",  # You can adjust the currency as needed
+        metadata={"reservation_id": reservation.id},
+    )
+
+    # Save the payment intent ID for reference
+    reservation.stripe_payment_intent_id = payment_intent.id
+    reservation.save()
+
+    # Send the client secret to the front-end to complete the payment
+    return render(request, 'payment/checkout.html', {
+        'reservation': reservation,
+        'client_secret': payment_intent.client_secret
+    })
+
+
+@csrf_exempt
+def payment_success(request):
+    # You will receive the payload from Stripe webhook here
+    payload = request.body
+    sig_header = request.META['HTTP_STRIPE_SIGNATURE']
+    endpoint_secret = settings.STRIPE_WEBHOOK_SECRET
+
+    try:
+        event = stripe.Webhook.construct_event(
+            payload, sig_header, endpoint_secret
+        )
+
+        # Handle the payment_intent.succeeded event
+        if event['type'] == 'payment_intent.succeeded':
+            payment_intent = event['data']['object']  # Contains a stripe.PaymentIntent object
+
+            reservation_id = payment_intent['metadata']['reservation_id']
+            reservation = Reservation.objects.get(id=reservation_id)
+            reservation.payment_status = 'paid'
+            reservation.save()
+
+            # Redirect to success page or show success message
+            return render(request, 'payment/success.html', {'reservation': reservation})
+
+    except ValueError as e:
+        # Invalid payload
+        return JsonResponse({'error': 'Invalid payload'}, status=400)
+    except stripe.error.SignatureVerificationError as e:
+        # Invalid signature
+        return JsonResponse({'error': 'Invalid signature'}, status=400)
+
+    return JsonResponse({'status': 'success'}, status=200)
+
+
+def calculate_total_amount(self):
+    base_price = self.car.price_per_day
+    days_rented = (self.end_date - self.start_date).days
+
+    insurance = 10  # You can add dynamic insurance pricing logic
+    taxes = 0.1 * (base_price * days_rented)  # Example: 10% tax
+
+    additional_services = 20  # Example: some fixed additional services
+
+    # Total amount
+    self.total_amount = (base_price * days_rented) + insurance + taxes + additional_services
+    return self.total_amount
+
+
+@login_required
+def booking_history(request):
+    # Get all past and upcoming reservations for the logged-in user
+    upcoming_reservations = Reservation.objects.filter(renter=request.user, end_date__gte=datetime.date.today(), status__in=['confirmed', 'pending'])
+    past_reservations = Reservation.objects.filter(renter=request.user, end_date__lt=datetime.date.today(), status='confirmed')
+
+    return render(request, 'customer/booking_history.html', {
+        'upcoming_reservations': upcoming_reservations,
+        'past_reservations': past_reservations
+    })
+
+
+@login_required
+def cancel_reservation(request, reservation_id):
+    reservation = get_object_or_404(Reservation, id=reservation_id)
+
+    # Ensure that the user is the renter of the reservation
+    if reservation.renter != request.user:
+        return HttpResponseForbidden("You are not allowed to cancel this reservation")
+
+    # Prevent cancellation if the reservation has already started
+    if reservation.start_date < datetime.date.today():
+        return HttpResponseForbidden("You cannot cancel a reservation that has already started")
+
+    # Update reservation status to 'canceled'
+    reservation.status = 'canceled'
+    reservation.save()
+
+    # Redirect to booking history page
+    return redirect('booking_history')
+
+
+@login_required
+def modify_reservation(request, reservation_id):
+    reservation = get_object_or_404(Reservation, id=reservation_id)
+
+    # Ensure the user is the renter of the reservation
+    if reservation.renter != request.user:
+        return HttpResponseForbidden("You are not allowed to modify this reservation")
+
+    if reservation.start_date < datetime.date.today():
+        return HttpResponseForbidden("You cannot modify a reservation that has already started")
+
+    if request.method == 'POST':
+        form = ReservationForm(request.POST, instance=reservation)
+        if form.is_valid():
+            form.save()  # Save the updated reservation
+            return redirect('booking_history')
+    else:
+        form = ReservationForm(instance=reservation)
+
+    return render(request, 'customer/modify_reservation.html', {
+        'form': form,
+        'reservation': reservation
+    })
+
+
+@login_required
+def manage_profile(request):
+    # Get the current user's profile
+    profile, created = CustomerProfile.objects.get_or_create(user=request.user)
+
+    if request.method == 'POST':
+        form = CustomerProfileForm(request.POST, request.FILES, instance=profile)
+        if form.is_valid():
+            form.save()
+            return redirect('profile')
+    else:
+        form = CustomerProfileForm(instance=profile)
+
+    return render(request, 'customer/manage_profile.html', {'form': form, 'profile': profile})
+
+
+def contact_support(request):
+    if request.method == "POST":
+        form = ContactForm(request.POST)
+        if form.is_valid():
+            name = form.cleaned_data['name']
+            email = form.cleaned_data['email']
+            message = form.cleaned_data['message']
+
+            # Send email to support team
+            send_mail(
+                f"Support Request from {name}",
+                message,
+                email,
+                [settings.SUPPORT_EMAIL],  # Define SUPPORT_EMAIL in settings.py
+                fail_silently=False,
+            )
+
+            # Optional: Provide a thank you message
+            return render(request, 'support/contact_success.html')
+
+    else:
+        form = ContactForm()
+
+    return render(request, 'support/contact.html', {'form': form})
+
+
+def faq_view(request):
+    faqs = FAQ.objects.all()
+    return render(request, 'support/faq.html', {'faqs': faqs})
+
+
+def confirm_booking(request, car_id):
+    if request.method == 'POST':
+        car = Car.objects.get(id=car_id)
+        customer = request.user
+
+        # Create a booking request (LeasingRequest)
+        leasing_request = LeasingRequest.objects.create(
+            car=car,
+            renter=customer,
+            start_date=timezone.now(),
+            end_date=timezone.now() + timedelta(days=3),  # Example 3-day rental
+            status='confirmed'
+        )
+
+        # Send booking confirmation email
+        send_mail(
+            f"Booking Confirmed: {car.make} {car.model}",
+            f"Your booking for {car.make} {car.model} is confirmed. The rental period is from {leasing_request.start_date} to {leasing_request.end_date}.",
+            settings.DEFAULT_FROM_EMAIL,
+            [customer.email],
+            fail_silently=False,
+        )
+
+        return redirect('booking_success')  # Redirect to a success page
+
+
+def notify_waitlist_user(car):
+    # Get all users on the waitlist for this car
+    waitlist_users = Waitlist.objects.filter(car=car)
+
+    for waitlist_user in waitlist_users:
+        user = waitlist_user.user
+        send_mail(
+            f"Car Available: {car.make} {car.model}",
+            f"Good news! The car you were interested in, {car.make} {car.model}, is now available for booking.",
+            settings.DEFAULT_FROM_EMAIL,
+            [user.email],
+            fail_silently=False,
+        )
+
+
+@login_required
+def customer_dashboard(request):
+    # Get the current user
+    user = request.user
+
+    # Get the user's rentals (past and future)
+    rentals = LeasingRequest.objects.filter(renter=user).order_by('-start_date')
+
+    # Get payment history for the user
+    payments = Payment.objects.filter(leasing_request__renter=user).order_by('-paid_at')
+
+    # Get reviews written by the customer and received by the customer
+    reviews_written = Review.objects.filter(user=user)
+    reviews_received = Review.objects.filter(car__owner=user)
+
+    # Get pending actions (e.g., unpaid rentals or pending requests)
+    pending_requests = LeasingRequest.objects.filter(renter=user, status='pending')
+
+    context = {
+        'rentals': rentals,
+        'payments': payments,
+        'reviews_written': reviews_written,
+        'reviews_received': reviews_received,
+        'pending_requests': pending_requests,
+    }
+
+    return render(request, 'customer_dashboard.html', context)
+
+
 
 
 

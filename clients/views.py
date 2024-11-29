@@ -1,5 +1,6 @@
 import datetime
-from . models import Car, Client
+from . models import *
+from django.conf import settings
 from django.core.files.storage import FileSystemStorage
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
@@ -7,20 +8,46 @@ from django.core.mail import send_mail
 from django.template.loader import render_to_string
 from django.utils.html import strip_tags
 from django.contrib.sites.shortcuts import get_current_site
-import random
-import string
-from django.shortcuts import render, redirect
+import string, stripe, random
+from django.shortcuts import render, redirect, get_object_or_404
 from .models import ClientProfile
 from django.http import JsonResponse
+from django.contrib.auth.decorators import login_required
+from django.contrib import messages
+from . forms import *
+from reportlab.lib.pagesizes import letter
+from reportlab.pdfgen import canvas
+from io import BytesIO
+from django.http import HttpResponse
+from django.db.models import Sum, Count
 from django.contrib.auth import get_user_model
 
+# Stripe API keys
+stripe.api_key = settings.STRIPE_TEST_SECRET_KEY
+
+
 # Create your views here.
-
-
+@login_required
 def client_home(request):
+    # Fetch the current user's car listings
+    cars = Car.objects.filter(owner=request.user)
 
-    return render(request, 'client_Home.html')
-    # name = Client.objects.filter(client_name=icon)
+    # Fetch leasing requests for the cars
+    leasing_requests = LeasingRequest.objects.filter(car__owner=request.user)
+
+    # Fetch payment records (earnings)
+    payments = Payment.objects.filter(leasing_request__car__owner=request.user)
+
+    # Fetch rental history for the user's cars
+    rental_history = RentalHistory.objects.filter(car__owner=request.user)
+
+    # Render the dashboard template with the necessary context
+    return render(request, 'client_Home.html', {
+        'cars': cars,
+        'leasing_requests': leasing_requests,
+        'payments': payments,
+        'rental_history': rental_history,
+    })
 
 
 def client_login(request):
@@ -220,6 +247,26 @@ def client_change_password(request):
     return render(request, 'Client_Home.html')
 
 
+def owner_profile(request):
+    if not request.user.is_authenticated:
+        return redirect('login')
+
+    # Fetch the car owner's profile
+    profile = OwnerProfile.objects.get(user=request.user)
+
+    # Fetch the owner's cars and bookings
+    cars = profile.get_cars()
+    bookings = profile.get_bookings()
+    earnings = profile.get_earnings()
+
+    return render(request, 'owner_profile.html', {
+        'profile': profile,
+        'cars': cars,
+        'bookings': bookings,
+        'earnings': earnings,
+    })
+
+
 def new_post(request):
     if not request.user.is_authenticated:
         return redirect('login')
@@ -279,6 +326,13 @@ def new_post(request):
             return render(request, 'back/error.html', {'error': error})
 
     return render(request, 'New_post.html')
+
+
+def car_detail(request, car_id):
+    car = Car.objects.get(id=car_id)
+    car.views += 1
+    car.save()
+    return render(request, 'car_owner/car_detail.html', {'car': car})
 
 
 def edit_post(request, pk):
@@ -368,12 +422,17 @@ def delete_post(request, pk):
         error = 'Something wrong'
         return render(request, 'back/error.html', {'error': error})
 
-    return redirect('news_list')
+    return redirect('cars_list')
 
 
-def car_list(request):
+def my_cars(request):
+    if not request.user.is_authenticated:
+        return redirect('login')
 
-    return render(request, 'car_list.html')
+    # Get all cars that belong to the logged-in user
+    cars = Car.objects.filter(owner=request.user)
+
+    return render(request, 'my_cars.html', {'cars': cars})
 
 
 def client_verify_code(request):
@@ -410,3 +469,487 @@ def client_verify_code(request):
 
     # If the request method is not POST, render registration pending or another appropriate template
     return render(request, 'client_verify.html')
+
+
+@login_required
+def leasing_requests(request):
+    # Fetch leasing requests for cars owned by the logged-in user
+    requests = LeasingRequest.objects.filter(car__owner=request.user)
+
+    return render(request, 'car_owner/leasing_requests.html', {
+        'requests': requests
+    })
+
+
+@login_required
+def view_leasing_request(request, pk):
+    leasing_request = get_object_or_404(LeasingRequest, pk=pk)
+
+    if request.method == 'POST':
+        action = request.POST.get('action')
+
+        if action == 'approve':
+            leasing_request.status = 'approved'
+        elif action == 'reject':
+            leasing_request.status = 'rejected'
+        leasing_request.save()
+        return redirect('car_owner:leasing_requests')
+
+    return render(request, 'car_owner/view_leasing_request.html', {
+        'leasing_request': leasing_request
+    })
+
+
+@login_required
+def add_client_review(request, pk):
+    car_owner = request.user
+    client = get_object_or_404(User, pk=pk)
+
+    if request.method == 'POST':
+        rating = int(request.POST.get('rating'))
+        review = request.POST.get('review')
+
+        # Ensure review is submitted after the rental is completed
+        leasing_request = LeasingRequest.objects.filter(car__owner=car_owner, renter=client, status='approved').first()
+        if not leasing_request:
+            return redirect('car_owner:leasing_requests')
+
+        client_review = ClientReview(
+            car_owner=car_owner,
+            client=client,
+            rating=rating,
+            review=review,
+            rental_start_date=leasing_request.start_date,
+            rental_end_date=leasing_request.end_date
+        )
+        client_review.save()
+        return redirect('car_owner:leasing_requests')
+
+    return render(request, 'car_owner/add_client_review.html', {
+        'client': client
+    })
+
+
+@login_required
+def send_message(request, pk):
+    receiver = get_object_or_404(User, pk=pk)
+
+    if request.method == 'POST':
+        message = request.POST.get('message')
+        if message:
+            Message.objects.create(
+                sender=request.user,
+                receiver=receiver,
+                message=message
+            )
+            return redirect('car_owner:leasing_requests')
+
+    return render(request, 'car_owner/send_message.html', {
+        'receiver': receiver
+    })
+
+
+def send_booking_confirmation(leasing_request):
+    car = leasing_request.car
+    renter = leasing_request.renter
+    start_date = leasing_request.start_date
+    end_date = leasing_request.end_date
+    total_amount = car.price_per_day * (end_date - start_date).days
+
+    # Notify the car owner
+    subject_owner = f"Booking Confirmed for {car.make} {car.model}"
+    message_owner = f"""
+    Hello {car.owner.username},
+
+    Your car: {car.make} {car.model} has been successfully booked by {renter.username}.
+
+    Booking Details:
+    - Rental Period: {start_date} to {end_date}
+    - Total Amount: ${total_amount}
+    - Pickup Location: {car.test_location}
+
+    Please ensure the car is ready for pickup.
+    """
+    from_email = settings.DEFAULT_FROM_EMAIL
+    recipient_list_owner = [car.owner.email]
+    send_mail(subject_owner, message_owner, from_email, recipient_list_owner)
+
+    # Notify the renter (client)
+    subject_renter = f"Booking Confirmed for {car.make} {car.model}"
+    message_renter = f"""
+    Hello {renter.username},
+
+    Your booking for {car.make} {car.model} has been confirmed by the car owner.
+
+    Booking Details:
+    - Rental Period: {start_date} to {end_date}
+    - Total Amount: ${total_amount}
+    - Pickup Location: {car.test_location}
+
+    Please make sure to arrive on time for pickup.
+    """
+    recipient_list_renter = [renter.email]
+    send_mail(subject_renter, message_renter, from_email, recipient_list_renter)
+
+
+@login_required
+# Function to confirm leasing request
+def approve_leasing_request(request, pk):
+    leasing_request = get_object_or_404(LeasingRequest, pk=pk)
+
+    if request.method == 'POST':
+        # Approve the leasing request
+        leasing_request.status = 'confirmed'
+        leasing_request.save()
+
+        # Send the booking confirmation email
+        send_booking_confirmation(leasing_request)
+
+        return redirect('car_owner:leasing_requests')
+
+    return render(request, 'car_owner/approve_request.html', {'leasing_request': leasing_request})
+
+
+def confirm_booking(request, leasing_request_id):
+    leasing_request = get_object_or_404(LeasingRequest, pk=leasing_request_id)
+
+    if request.method == 'POST':
+        # Update status to confirmed
+        leasing_request.status = 'confirmed'
+        leasing_request.save()
+
+        # Send booking confirmation emails
+        send_booking_confirmation(leasing_request)
+
+        # Show confirmation message in-app
+        messages.success(request, f"Booking for {leasing_request.car.make} {leasing_request.car.model} has been confirmed.")
+
+        return redirect('car_owner:leasing_requests')
+
+    return render(request, 'car_owner/confirm_booking.html', {'leasing_request': leasing_request})
+
+
+@login_required
+def process_payment(request, leasing_request_id):
+    leasing_request = get_object_or_404(LeasingRequest, pk=leasing_request_id)
+
+    # Calculate the total amount based on car price per day and rental duration
+    total_amount = leasing_request.car.price_per_day * (leasing_request.end_date - leasing_request.start_date).days
+
+    if request.method == 'POST':
+        # Create a Stripe payment intent
+        intent = stripe.PaymentIntent.create(
+            amount=int(total_amount * 100),  # Convert to cents
+            currency='usd',
+            metadata={'leasing_request_id': leasing_request.id},
+        )
+
+        # Create a Payment record in the database
+        payment = Payment.objects.create(
+            leasing_request=leasing_request,
+            amount=total_amount,
+            status='pending',
+        )
+
+        return render(request, 'client/payment_confirmation.html', {
+            'client_secret': intent.client_secret,
+            'payment_id': payment.id,
+        })
+
+    return render(request, 'client/payment_page.html', {
+        'total_amount': total_amount,
+    })
+
+def payment_success(request, payment_id):
+    payment = get_object_or_404(Payment, pk=payment_id)
+    payment.status = 'paid'
+    payment.save()
+
+    return render(request, 'client/payment_success.html', {'payment': payment})
+
+@login_required
+def payment_history(request):
+    # Get all payments for cars owned by the logged-in user
+    payments = Payment.objects.filter(leasing_request__car__owner=request.user).order_by('-paid_at')
+
+    return render(request, 'car_owner/payment_history.html', {'payments': payments})
+
+
+def send_new_request_notification(leasing_request):
+    car = leasing_request.car
+    owner = car.owner
+    renter = leasing_request.renter
+    subject = f"New Rental Request for {car.make} {car.model}"
+    message = f"""
+    Hello {owner.username},
+
+    You have received a new rental request for your car: {car.make} {car.model}.
+
+    Client Information:
+    - Renter: {renter.username}
+    - Rental Period: {leasing_request.start_date} to {leasing_request.end_date}
+    - Pickup Location: {car.test_location}
+
+    Please log in to your account to review and manage this request.
+
+    Best regards,
+    The Car Lease Team
+    """
+    from_email = settings.DEFAULT_FROM_EMAIL
+    recipient_list = [owner.email]
+
+    send_mail(subject, message, from_email, recipient_list)
+
+@login_required
+def new_rental_request(request, car_id):
+    car = get_object_or_404(Car, pk=car_id)
+
+    if request.method == 'POST':
+        start_date = request.POST.get('start_date')
+        end_date = request.POST.get('end_date')
+
+        # Create a new LeasingRequest
+        leasing_request = LeasingRequest.objects.create(
+            car=car,
+            renter=request.user,
+            start_date=start_date,
+            end_date=end_date,
+            status='pending'
+        )
+
+        # Add a message to notify the car owner
+        messages.success(request, f'New rental request received for your {car.make} {car.model}')
+
+        # Send an email notification to the car owner
+        send_new_request_notification(leasing_request)
+
+        return redirect('car_owner:leasing_requests')
+
+    return render(request, 'client/new_rental_request.html', {'car': car})
+
+@login_required
+def upload_insurance(request, car_id):
+    car = Car.objects.get(id=car_id)
+
+    if request.method == 'POST':
+        form = CarInsuranceForm(request.POST, request.FILES, instance=car)
+        if form.is_valid():
+            form.save()
+            return redirect('car_owner:my_listings')  # Redirect after saving
+    else:
+        form = CarInsuranceForm(instance=car)
+
+    return render(request, 'car_owner/upload_insurance.html', {'form': form, 'car': car})
+
+
+def generate_rental_agreement(leasing_request_id):
+    leasing_request = LeasingRequest.objects.get(id=leasing_request_id)
+    car = leasing_request.car
+    renter = leasing_request.renter
+    start_date = leasing_request.start_date
+    end_date = leasing_request.end_date
+    total_amount = car.price_per_day * (end_date - start_date).days
+
+    # Create a PDF in memory
+    buffer = BytesIO()
+    p = canvas.Canvas(buffer, pagesize=letter)
+
+    # Add text to the PDF (you can customize this as needed)
+    p.drawString(100, 750, f"Rental Agreement for {car.make} {car.model}")
+    p.drawString(100, 730, f"Renter: {renter.username}")
+    p.drawString(100, 710, f"Rental Period: {start_date} to {end_date}")
+    p.drawString(100, 690, f"Total Rental Amount: ${total_amount}")
+    p.drawString(100, 670, f"Pickup Location: {car.test_location}")
+
+    # Add terms and conditions
+    p.drawString(100, 650, "Terms and Conditions:")
+    p.drawString(100, 630, "1. The renter is responsible for the vehicle during the lease period.")
+    p.drawString(100, 610, "2. Insurance must be valid for the rental period.")
+    p.drawString(100, 590, "3. Any damages to the vehicle during the rental period are the responsibility of the renter.")
+
+    # Save the PDF in memory and return it as an HTTP response
+    p.showPage()
+    p.save()
+
+    buffer.seek(0)
+    response = HttpResponse(buffer, content_type='application/pdf')
+    response['Content-Disposition'] = f'inline; filename="rental_agreement_{leasing_request.id}.pdf"'
+    return response
+
+
+@login_required
+def download_agreement(request, leasing_request_id):
+    leasing_request = get_object_or_404(LeasingRequest, id=leasing_request_id)
+
+    if leasing_request.car.owner != request.user:
+        return redirect('login')  # Redirect if the user is not the owner of the car
+
+    # Generate the rental agreement
+    return generate_rental_agreement(leasing_request_id)
+
+
+@login_required
+def upload_custom_agreement(request, car_id):
+    car = Car.objects.get(id=car_id)
+
+    if request.method == 'POST':
+        if 'agreement_document' in request.FILES:
+            car.rental_agreement_document = request.FILES['agreement_document']
+            car.save()
+            return redirect('car_owner:my_listings')
+
+    return render(request, 'car_owner/upload_custom_agreement.html', {'car': car})
+
+
+def get_car_performance(car_id):
+    # Get the car object
+    car = Car.objects.get(id=car_id)
+
+    # Count the number of leasing requests (rental frequency)
+    rental_frequency = LeasingRequest.objects.filter(car=car).count()
+
+    # Calculate total income generated (sum of payments for the car)
+    total_income = Payment.objects.filter(leasing_request__car=car).aggregate(Sum('amount'))['amount__sum'] or 0
+
+    # Get the car's view count (if you have a views field)
+    views = car.views
+
+    # Return the performance metrics
+    return {
+        'car': car,
+        'rental_frequency': rental_frequency,
+        'total_income': total_income,
+        'views': views,
+    }
+
+
+def car_performance_report(request):
+    cars = Car.objects.all()
+
+    performance_data = []
+    for car in cars:
+        # Get car performance data
+        data = get_car_performance(car.id)
+        performance_data.append(data)
+
+    # You can also filter by a specific time period if needed
+    # Example: Filter only rentals in the last 30 days
+    start_date = datetime.now() - datetime.timedelta(days=30)
+    cars_recent_performance = Car.objects.filter(leasing_requests__start_date__gte=start_date)
+
+    return render(request, 'car_owner/car_performance_report.html', {
+        'performance_data': performance_data,
+        'cars_recent_performance': cars_recent_performance,
+    })
+
+
+def submit_review(request, leasing_request_id):
+    if not request.user.is_authenticated:
+        return redirect('login')
+
+    leasing_request = LeasingRequest.objects.get(id=leasing_request_id)
+
+    if leasing_request.renter != request.user:
+        return redirect('error')  # Only the renter can review
+
+    if leasing_request.status != 'confirmed':
+        return redirect('error')  # Can only review after the rental is confirmed
+
+    # Check if review already exists
+    if Review.objects.filter(leasing_request=leasing_request).exists():
+        return redirect('error')  # User has already submitted a review for this rental
+
+    if request.method == 'POST':
+        form = ReviewForm(request.POST)
+        if form.is_valid():
+            # Save the review with the car and owner details
+            review = form.save(commit=False)
+            review.car = leasing_request.car
+            review.owner = leasing_request.car.owner
+            review.client = request.user
+            review.save()
+            return redirect('owner_profile')  # Redirect to the owner's profile after review submission
+    else:
+        form = ReviewForm()
+
+    return render(request, 'submit_review.html', {'form': form, 'leasing_request': leasing_request})
+
+
+def view_maintenance(request, car_id):
+    if not request.user.is_authenticated:
+        return redirect('login')
+
+    car = Car.objects.get(id=car_id, owner=request.user)
+    maintenances = car.maintenances.all()
+
+    return render(request, 'car_maintenance.html', {'car': car, 'maintenances': maintenances})
+
+
+def report_damage(request, car_id, renter_id):
+    if not request.user.is_authenticated:
+        return redirect('login')
+
+    car = Car.objects.get(id=car_id, owner=request.user)
+    renter = User.objects.get(id=renter_id)
+
+    if request.method == "POST":
+        description = request.POST.get('description')
+        damage_cost = request.POST.get('damage_cost')
+
+        damage_report = DamageReport(
+            car=car,
+            renter=renter,
+            description=description,
+            damage_cost=damage_cost,
+        )
+        damage_report.save()
+
+        return redirect('car_maintenance', car_id=car.id)  # Redirect back to car's maintenance history
+
+    return render(request, 'report_damage.html', {'car': car, 'renter': renter})
+
+
+def maintenance_reminders(request):
+    if not request.user.is_authenticated:
+        return redirect('login')
+
+    cars = Car.objects.filter(owner=request.user)
+    reminders = []
+
+    for car in cars:
+        for reminder in car.maintenance_reminders.all():
+            reminder.check_if_due()
+            if reminder.is_due:
+                reminders.append(reminder)
+
+    return render(request, 'maintenance_reminders.html', {'reminders': reminders})
+
+
+def bulk_update(request):
+    if not request.user.is_authenticated:
+        return redirect('login')
+
+    # Handle the form submission
+    if request.method == 'POST':
+        form = BulkUpdateForm(request.POST)
+
+        if form.is_valid():
+            # Get the selected cars
+            cars = form.cleaned_data.get('cars')
+
+            # Update the selected cars with the provided data
+            price_per_day = form.cleaned_data.get('price_per_day')
+            available_for_testing = form.cleaned_data.get('Available_for_testing')
+
+            if price_per_day:
+                cars.update(price_per_day=price_per_day)
+            if available_for_testing:
+                cars.update(Available_for_testing=available_for_testing)
+
+            return redirect('my_cars')  # Redirect to the "My Cars" page after the update
+
+    else:
+        form = BulkUpdateForm()
+
+    return render(request, 'bulk_update.html', {'form': form})
+

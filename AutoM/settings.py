@@ -138,3 +138,17 @@ EMAIL_PORT = 587  # TLS port for Gmail
 EMAIL_USE_TLS = True
 EMAIL_HOST_USER = 'oesigbone@gmail.com'  # Replace with your Gmail email address
 EMAIL_HOST_PASSWORD = 'mgtj dweb qvqb zsgf'  # Replace with your Gmail password or app-specific password
+
+
+# Stripe configuration
+STRIPE_TEST_PUBLIC_KEY = 'your-stripe-public-key'
+STRIPE_TEST_SECRET_KEY = 'your-stripe-secret-key'
+STRIPE_WEBHOOK_SECRET = 'your-webhook-signing-secret'
+
+
+# Celery configuration
+CELERY_BROKER_URL = 'redis://localhost:6379/0'  # Or your chosen broker (Redis in this case)
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+
+

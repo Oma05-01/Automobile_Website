@@ -3,6 +3,7 @@ from django.contrib.auth.models import User
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 import logging
+from clients.models import Car
 
 
 # Create your models here.
@@ -22,12 +23,14 @@ class Customer(models.Model):
 
 class CustomerProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='customer_profile')
-    verification_code = models.CharField(max_length=6, blank=True, null=True)
-    is_verified = models.BooleanField(default=False)
-    # Add other fields as needed for your user profile
+    phone_number = models.CharField(max_length=15, null=True, blank=True)
+    address = models.TextField(null=True, blank=True)
+    receive_notifications = models.BooleanField(default=True)  # Option to receive notifications
+    driver_license = models.ImageField(upload_to='licenses/', null=True,
+                                       blank=True)  # Optional field for driver's license
 
     def __str__(self):
-        return f"Profile for {self.user}"
+        return f"{self.user.username} Profile"
 
 
 logger = logging.getLogger(__name__)
@@ -51,3 +54,47 @@ def save_user_profile(sender, instance, **kwargs):
             logger.debug(f"Customer profile saved for user: {instance.username}")
     except Exception as e:
         logger.error(f"Error saving profile for user {instance.username}: {e}")
+
+
+class Reservation(models.Model):
+    car = models.ForeignKey(Car, on_delete=models.CASCADE)
+    renter = models.ForeignKey(User, on_delete=models.CASCADE)
+    start_date = models.DateField()
+    end_date = models.DateField()
+    total_amount = models.DecimalField(max_digits=10, decimal_places=2)
+    payment_status = models.CharField(max_length=20,
+                                      choices=[('pending', 'Pending'), ('paid', 'Paid'), ('failed', 'Failed')],
+                                      default='pending')
+    stripe_payment_intent_id = models.CharField(max_length=255, null=True, blank=True)
+    status = models.CharField(max_length=20,
+                              choices=[('confirmed', 'Confirmed'), ('pending', 'Pending'), ('canceled', 'Canceled')],
+                              default='pending')
+
+    def __str__(self):
+        return f"Reservation for {self.car} by {self.renter} from {self.start_date} to {self.end_date}"
+
+    def calculate_total_amount(self):
+        # Assuming you have a base price and other factors like insurance, taxes, etc.
+        base_price = self.car.price_per_day
+        days_rented = (self.end_date - self.start_date).days
+        self.total_amount = base_price * days_rented
+        return self.total_amount
+
+
+class FAQ(models.Model):
+    question = models.CharField(max_length=255)
+    answer = models.TextField()
+
+    def __str__(self):
+        return self.question
+
+
+class Waitlist(models.Model):
+    car = models.ForeignKey(Car, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    added_on = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.user.username} on waitlist for {self.car.make} {self.car.model}"
+
+

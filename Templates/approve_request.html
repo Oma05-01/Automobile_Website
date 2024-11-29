@@ -1,0 +1,16 @@
+<!-- templates/car_owner/approve_request.html -->
+{% extends 'base.html' %}
+
+{% block title %}Booking Confirmation{% endblock %}
+
+{% block content %}
+  <h1>Confirm Booking for {{ leasing_request.car.make }} {{ leasing_request.car.model }}</h1>
+  <p><strong>Client:</strong> {{ leasing_request.renter.username }}</p>
+  <p><strong>Rental Period:</strong> {{ leasing_request.start_date }} to {{ leasing_request.end_date }}</p>
+  <p><strong>Total Price:</strong> ${{ leasing_request.car.price_per_day * (leasing_request.end_date - leasing_request.start_date).days }}</p>
+
+  <form method="POST">
+    {% csrf_token %}
+    <button type="submit">Confirm Booking</button>
+  </form>
+{% endblock %}

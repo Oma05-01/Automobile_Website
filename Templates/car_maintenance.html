@@ -1,0 +1,18 @@
+<!-- car_maintenance.html -->
+{% extends "base.html" %}
+
+{% block content %}
+  <h2>Maintenance History for {{ car.make }} {{ car.model }} ({{ car.year }})</h2>
+
+  <h3>Maintenance Records</h3>
+  <ul>
+    {% for maintenance in maintenances %}
+      <li>{{ maintenance.service_type }} on {{ maintenance.service_date }} - Mileage: {{ maintenance.mileage }} - Cost: ${{ maintenance.cost }}</li>
+      <p>{{ maintenance.details }}</p>
+    {% empty %}
+      <p>No maintenance records available.</p>
+    {% endfor %}
+  </ul>
+
+  <a href="{% url 'report_damage' car.id renter_id %}">Report Damage</a>
+{% endblock %}

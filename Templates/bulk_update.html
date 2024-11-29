@@ -1,0 +1,26 @@
+<!-- bulk_update.html -->
+{% extends "base.html" %}
+
+{% block content %}
+  <h2>Bulk Update Cars</h2>
+
+  <form method="post">
+    {% csrf_token %}
+    <fieldset>
+      <legend>Select Cars to Update:</legend>
+      {{ form.cars }}
+    </fieldset>
+
+    <fieldset>
+      <legend>Update Fields:</legend>
+      <label for="price_per_day">Price per Day ($):</label>
+      {{ form.price_per_day }}
+
+      <label for="Available_for_testing">Availability:</label>
+      {{ form.Available_for_testing }}
+    </fieldset>
+
+    <button type="submit">Update Selected Cars</button>
+  </form>
+
+{% endblock %}

@@ -1,0 +1,44 @@
+<!-- templates/client/payment_page.html -->
+{% extends 'base.html' %}
+
+{% block title %}Payment Page{% endblock %}
+
+{% block content %}
+  <h1>Pay for Your Booking</h1>
+  <p>Total Amount: ${{ total_amount }}</p>
+
+  <form method="POST" id="payment-form">
+    {% csrf_token %}
+    <div id="card-element"></div>
+    <button id="submit" type="submit">Pay Now</button>
+  </form>
+
+  <script src="https://js.stripe.com/v3/"></script>
+  <script>
+    var stripe = Stripe('{{ STRIPE_TEST_PUBLIC_KEY }}');
+    var elements = stripe.elements();
+    var card = elements.create('card');
+    card.mount('#card-element');
+
+    var form = document.getElementById('payment-form');
+
+    form.addEventListener('submit', function(event) {
+      event.preventDefault();
+
+      stripe.confirmCardPayment('{{ client_secret }}', {
+        payment_method: {
+          card: card,
+        },
+      }).then(function(result) {
+        if (result.error) {
+          alert(result.error.message);
+        } else {
+          if (result.paymentIntent.status === 'succeeded') {
+            window.location.href = "/payment-success/" + '{{ payment_id }}';
+          }
+        }
+      });
+    });
+  </script>
+{% endblock %}
+

@@ -3,7 +3,7 @@ from django.contrib.auth.models import User
 from django.core.exceptions import ObjectDoesNotExist
 from django.contrib import messages
 
-from .models import Client, Car
+from .models import *
 
 
 @admin.action(description='Delete selected users and their corresponding clients')
@@ -32,6 +32,17 @@ class CustomUsersAdmin(admin.ModelAdmin):
     actions = [delete_users_and_clients]
 
 
+class CarAdmin(admin.ModelAdmin):
+    list_display = ('make', 'model', 'owner', 'price_per_day', 'is_active', 'Available_for_testing')
+    list_filter = ('owner', 'is_active', 'Available_for_testing')
+    search_fields = ('make', 'model')
+
+
 admin.site.unregister(User)
 admin.site.register(User, CustomUsersAdmin)
 admin.site.register(Car)
+admin.site.register(Review)
+admin.site.register(CarMaintenance)
+admin.site.register(DamageReport)
+admin.site.register(MaintenanceReminder)
+admin.site.register(Car, CarAdmin)

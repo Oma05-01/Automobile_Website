@@ -1,14 +1,83 @@
-<!-- templates/home.html -->
+<!-- templates/car_owner/dashboard.html -->
+{% extends 'base.html' %}
+{% load static %}
 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Home Page</title>
-</head>
-<body>
-    <h1>Welcome to Our Website</h1>
-    <p>This is a simple home page.</p>
-</body>
-</html>
+{% block content %}
+  <div class="dashboard-container">
+    <h1>Welcome to Your Dashboard, {{ user.username }}</h1>
+
+    <section class="my-listings">
+      <h2>My Listings</h2>
+      <a href="{% url 'car:add_car_listing' %}" class="btn">Add New Car Listing</a>
+      <ul>
+        {% for car in cars %}
+          <li>
+            <h3>{{ car.make }} {{ car.model }} ({{ car.year }})</h3>
+            <p>{{ car.description }}</p>
+            <p>Price per Day: ${{ car.price_per_day }}</p>
+            <p>Status: {% if car.is_active %}Active{% else %}Inactive{% endif %}</p>
+            <p>Available for Test Drive: {% if car.Available_for_testing == 'available' %}Yes{% else %}No{% endif %}</p>
+            <p>Test Drive Fee: ${{ car.test_drive_fee }}</p>
+            <p>Test Drive Location: {{ car.test_location }}</p>
+            <a href="{% url 'car:edit_car_listing' car.id %}">Edit</a> |
+            <a href="{% url 'car:delete_car_listing' car.id %}">Delete</a>
+          </li>
+        {% empty %}
+          <p>You have no car listings.</p>
+        {% endfor %}
+      </ul>
+    </section>
+
+    <section class="leasing-requests">
+      <h2>Leasing Requests</h2>
+      <ul>
+        {% for request in leasing_requests %}
+          <li>
+            <h3>Leasing Request for {{ request.car.make }} {{ request.car.model }}</h3>
+            <p>From: {{ request.start_date }} to {{ request.end_date }}</p>
+            <p>Status: {{ request.status }}</p>
+            <a href="{% url 'car:manage_leasing_request' request.id %}">Manage Request</a>
+          </li>
+        {% empty %}
+          <p>No leasing requests.</p>
+        {% endfor %}
+      </ul>
+    </section>
+
+    <section class="earnings-revenue">
+      <h2>Earnings & Revenue</h2>
+      <ul>
+        {% for payment in payments %}
+          <li>
+            <p>Payment for: {{ payment.leasing_request.car.make }} {{ payment.leasing_request.car.model }}</p>
+            <p>Amount: ${{ payment.amount }}</p>
+            <p>Paid at: {{ payment.paid_at }}</p>
+          </li>
+        {% empty %}
+          <p>No earnings yet.</p>
+        {% endfor %}
+      </ul>
+    </section>
+
+    <section class="car-history">
+      <h2>Car History</h2>
+      <ul>
+        {% for history in rental_history %}
+          <li>
+            <h3>{{ history.car.make }} {{ history.car.model }} - Rental</h3>
+            <p>Rented by: {{ history.renter.username }}</p>
+            <p>From: {{ history.start_date }} to {{ history.end_date }}</p>
+            <p>Total Amount: ${{ history.total_amount }}</p>
+            {% if history.review %}
+              <p>Review: {{ history.review }}</p>
+            {% else %}
+              <p>No review given.</p>
+            {% endif %}
+          </li>
+        {% empty %}
+          <p>No rental history.</p>
+        {% endfor %}
+      </ul>
+    </section>
+  </div>
+{% endblock %}

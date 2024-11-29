@@ -1,0 +1,27 @@
+{% extends 'base_customer.html' %}
+
+{% block content %}
+    <h1>{{ car.make }} {{ car.model }} ({{ car.year }})</h1>
+    <p>{{ car.description }}</p>
+    <p>Price per day: ${{ car.price_per_day }}</p>
+
+    <h2>Reviews</h2>
+
+    {% if reviews %}
+        <ul>
+            {% for review in reviews %}
+                <li>
+                    <strong>{{ review.renter.username }}:</strong>
+                    <p>{{ review.get_rating_stars }} - {{ review.review_text }}</p>
+                    <p><small>Reviewed on: {{ review.created_at }}</small></p>
+                </li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p>No reviews yet. Be the first to leave a review!</p>
+    {% endif %}
+
+    {% if user == car.owner %}
+        <a href="{% url 'leave_review' reservation_id=reservation.id %}">Leave a Review</a>
+    {% endif %}
+{% endblock %}

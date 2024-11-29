@@ -1,0 +1,31 @@
+{% extends 'base_customer.html' %}
+
+{% block content %}
+    {% if leasing_request.status == 'confirmed' %}
+        <a href="{% url 'car_owner:download_agreement' leasing_request.id %}">Download Rental Agreement</a>
+    {% endif %}
+
+    <h1>Booking Confirmation</h1>
+    <p>Your booking has been confirmed!</p>
+    <p>Car: {{ reservation.car.make }} {{ reservation.car.model }}</p>
+    <p>Rental Period: {{ reservation.start_date }} to {{ reservation.end_date }}</p>
+    <p>Total Amount: ${{ reservation.total_amount }}</p>
+
+    <p>Status: {{ reservation.status }}</p>
+
+    <button>Confirm Reservation</button>
+
+{% endblock %}
+
+{% block content %}
+<h1>Cancel Reservation</h1>
+
+<p>Are you sure you want to cancel your reservation for {{ reservation.car.make }} {{ reservation.car.model }} from {{ reservation.start_date }} to {{ reservation.end_date }}?</p>
+
+<form method="post">
+  {% csrf_token %}
+  <button type="submit">Confirm Cancellation</button>
+</form>
+
+<a href="{% url 'booking_history' %}">Back to Booking History</a>
+{% endblock %}

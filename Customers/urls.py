@@ -15,5 +15,12 @@ urlpatterns = [
     path('schedule-date/', views.schedule_date, name='schedule_date'),
     path('check_email/', views.check_email, name='check_email'),
     path('customer_verify/', customer_verify_code, name='customer_verify_code'),
-
+    path('car/<int:car_id>/', views.car_detail, name='car_detail'),
+    path('reservation/<int:reservation_id>/leave_review/', views.leave_review, name='leave_review'),
+    path('booking-history/', views.booking_history, name='booking_history'),
+    path('cancel-reservation/<int:reservation_id>/', views.cancel_reservation, name='cancel_reservation'),
+    path('modify-reservation/<int:reservation_id>/', views.modify_reservation, name='modify_reservation'),
+    path('profile/', views.manage_profile, name='profile'),
+    path('contact/', views.contact_support, name='contact_support'),
+    path('faq/', views.faq_view, name='faq_view'),
 ]

@@ -1,0 +1,16 @@
+<!-- templates/car_owner/send_message.html -->
+{% extends 'base.html' %}
+
+{% block title %}Send Message{% endblock %}
+
+{% block content %}
+  <h1>Send Message to {{ receiver.username }}</h1>
+
+  <form method="POST">
+    {% csrf_token %}
+    <label for="message">Message:</label>
+    <textarea name="message" id="message" required></textarea><br><br>
+
+    <button type="submit">Send Message</button>
+  </form>
+{% endblock %}

@@ -1,0 +1,15 @@
+{% extends 'base_customer.html' %}
+
+{% block content %}
+    <h1>Availability Calendar for {{ car.make }} {{ car.model }}</h1>
+
+    <div class="calendar">
+        {% for day in 0|date:"Y-m-d" %}
+            <div class="day {% if day in booked_dates %} booked {% else %} available {% endif %}">
+                {{ day }}
+            </div>
+        {% endfor %}
+    </div>
+
+    <p>Note: Booked dates are highlighted in red.</p>
+{% endblock %}

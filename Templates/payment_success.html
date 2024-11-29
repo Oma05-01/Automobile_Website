@@ -1,0 +1,10 @@
+<!-- templates/client/payment_success.html -->
+{% extends 'base.html' %}
+
+{% block title %}Payment Successful{% endblock %}
+
+{% block content %}
+  <h1>Payment Successful</h1>
+  <p>Thank you for your payment. Your booking has been confirmed.</p>
+  <p>Payment Details: ${{ payment.amount }} for {{ payment.leasing_request.car.make }} {{ payment.leasing_request.car.model }}</p>
+{% endblock %}

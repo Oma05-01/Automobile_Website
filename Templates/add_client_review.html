@@ -1,0 +1,25 @@
+<!-- templates/car_owner/add_client_review.html -->
+{% extends 'base.html' %}
+
+{% block title %}Add Client Review{% endblock %}
+
+{% block content %}
+  <h1>Add Review for {{ client.username }}</h1>
+
+  <form method="POST">
+    {% csrf_token %}
+    <label for="rating">Rating:</label>
+    <select name="rating" id="rating" required>
+      <option value="1">1 - Poor</option>
+      <option value="2">2 - Fair</option>
+      <option value="3">3 - Good</option>
+      <option value="4">4 - Very Good</option>
+      <option value="5">5 - Excellent</option>
+    </select><br><br>
+
+    <label for="review">Review:</label>
+    <textarea name="review" id="review" required></textarea><br><br>
+
+    <button type="submit">Submit Review</button>
+  </form>
+{% endblock %}
