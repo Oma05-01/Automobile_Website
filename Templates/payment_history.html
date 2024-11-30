@@ -1,9 +1,11 @@
 <!-- templates/car_owner/payment_history.html -->
 {% extends 'base.html' %}
+{% load static %}
 
 {% block title %}Payment History{% endblock %}
 
 {% block content %}
+  <link rel="stylesheet" href="{% static 'styles/payment_his.css' %}">
   <h1>Your Payment History</h1>
   <ul>
     {% for payment in payments %}

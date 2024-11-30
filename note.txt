@@ -4,4 +4,4 @@ CUSTOMER
 Loyalty Rewards: Offer loyalty points or discounts to customers who frequently rent cars. For example, customers could receive a discount on future bookings based on the number of cars they have rented.
 Promo Codes: Allow customers to apply promo codes during the checkout process to receive discounts. - this one is later abeg
 
-
+<link rel="stylesheet" href="{% static 'styles/admin_dash.css' %}">

@@ -1,3 +1,4 @@
+{% load static %}
 <!-- registration_pending.html -->
 <!DOCTYPE html>
 <html lang="en">
@@ -5,47 +6,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Client Registration Pending</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            text-align: center;
-            margin: 20px;
-        }
-        .container {
-            max-width: 600px;
-            margin: auto;
-            padding: 20px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            background-color: #f9f9f9;
-        }
-        h1 {
-            color: #333;
-        }
-        p {
-            margin-bottom: 20px;
-        }
-        .note {
-            font-style: italic;
-            color: #777;
-        }
-        .btn {
-            display: inline-block;
-            padding: 10px 20px;
-            margin-top: 20px;
-            font-size: 16px;
-            color: #fff;
-            background-color: #007BFF;
-            border: none;
-            border-radius: 5px;
-            text-decoration: none;
-            cursor: pointer;
-        }
-        .btn:hover {
-            background-color: #0056b3;
-        }
-    </style>
-</head>
+    <link rel="stylesheet" href="{% static 'styles/client_reg_pend.css' %}"></head>
 <body>
     <div class="container">
         <h1>Registration Pending</h1>

@@ -5,7 +5,6 @@ from .views import client_verify_code
 urlpatterns = [
     # path('home/<str:icon>', views.client_home, name='home'),
     path('client_home/', views.client_home, name='CLhome'),
-    path('Client-Login/', views.client_login, name='Client_login'),
     path('client-register/', views.client_register, name='client_register'),
     path('client_verify/', client_verify_code, name='client_verify_code'),
     path('client_logout/', views.client_logout, name='Client_logout'),

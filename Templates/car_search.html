@@ -1,8 +1,11 @@
 {% extends "base2.html" %}
+{% load static %}
 
 {% block content %}
-  <h1>Car Search</h1>
+  <link rel="stylesheet" href="{% static 'styles/car_search.css' %}">
 
+  <!-- Search Form -->
+  <h1>Car Search</h1>
   <form method="get">
     <label for="searched">Search for a car:</label>
     <input type="text" name="searched" value="{{ searched_car }}" placeholder="Search by name">
@@ -17,14 +20,14 @@
     </select>
 
     <label for="min_price">Price Range:</label>
-    <input type="number" name="min_price" placeholder="Min Price">
-    <input type="number" name="max_price" placeholder="Max Price">
+    <input type="number" name="min_price" placeholder="Min Price" min="0">
+    <input type="number" name="max_price" placeholder="Max Price" min="0">
 
     <label for="year">Year:</label>
-    <input type="number" name="year" placeholder="Car Year">
+    <input type="number" name="year" placeholder="Car Year" min="1900" max="2100">
 
     <label for="mileage">Mileage (km):</label>
-    <input type="number" name="mileage" placeholder="Max Mileage">
+    <input type="number" name="mileage" placeholder="Max Mileage" min="0">
 
     <label for="location">Location:</label>
     <input type="text" name="location" placeholder="Location">
@@ -39,6 +42,7 @@
     <button type="submit">Search</button>
   </form>
 
+  <!-- Sort & Filter Section -->
   <h2>Filter & Sort Results</h2>
   <form method="get">
     <label for="sort_by">Sort by:</label>
@@ -51,11 +55,12 @@
     <button type="submit">Sort</button>
   </form>
 
+  <!-- Cars List -->
   <h2>Cars</h2>
   <form method="get">
-    <ul>
+    <ul class="car-list">
       {% for car in cars %}
-        <li>
+        <li class="car-item">
           <h3>{{ car.Car_name }} ({{ car.year }})</h3>
           <p>Price: ${{ car.price_per_day }} / day</p>
           <p>{{ car.Description }}</p>
@@ -72,15 +77,16 @@
     <button type="submit">Compare Selected Cars</button>
   </form>
 
+  <!-- Car Comparison Table -->
   <h2>Comparison</h2>
   {% if selected_cars %}
-    <table>
+    <table class="comparison-table">
       <tr>
         <th>Car Name</th>
         <th>Price</th>
         <th>Year</th>
         <th>Features</th>
-        <!-- More fields to compare -->
+        <!-- Add more fields to compare -->
       </tr>
       {% for car in selected_cars %}
         <tr>

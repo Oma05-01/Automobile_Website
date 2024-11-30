@@ -1,0 +1,211 @@
+/* General Styles */
+body {
+    font-family: 'Roboto', sans-serif;
+    background-color: #f4f7fc;
+    color: #333;
+    margin: 0;
+    padding: 0;
+}
+
+h1, h2 {
+    color: #333;
+    margin-bottom: 20px;
+    font-weight: 600;
+}
+
+h1 {
+    text-align: center;
+    font-size: 2rem;
+    margin-top: 30px;
+}
+
+h2 {
+    font-size: 1.5rem;
+    color: #444;
+}
+
+.dashboard-container {
+    max-width: 1200px;
+    margin: 30px auto;
+    padding: 20px;
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+section {
+    margin-bottom: 40px;
+}
+
+a.btn {
+    background-color: #007BFF;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 4px;
+    text-decoration: none;
+    font-weight: bold;
+    display: inline-block;
+    margin-bottom: 20px;
+    transition: background-color 0.3s ease;
+}
+
+a.btn:hover {
+    background-color: #0056b3;
+}
+
+/* My Listings Section */
+.my-listings ul {
+    list-style-type: none;
+    padding: 0;
+}
+
+.my-listings li {
+    border-bottom: 1px solid #ddd;
+    padding: 20px 0;
+    font-size: 1rem;
+}
+
+.my-listings li h3 {
+    font-size: 1.2rem;
+    font-weight: bold;
+}
+
+.my-listings li p {
+    margin: 8px 0;
+}
+
+.my-listings a {
+    color: #007BFF;
+    text-decoration: none;
+    margin: 0 10px;
+}
+
+.my-listings a:hover {
+    text-decoration: underline;
+}
+
+/* Leasing Requests Section */
+.leasing-requests ul {
+    list-style-type: none;
+    padding: 0;
+}
+
+.leasing-requests li {
+    border-bottom: 1px solid #ddd;
+    padding: 20px 0;
+    font-size: 1rem;
+}
+
+.leasing-requests li h3 {
+    font-size: 1.2rem;
+    font-weight: bold;
+}
+
+.leasing-requests li p {
+    margin: 8px 0;
+}
+
+.leasing-requests a {
+    color: #007BFF;
+    text-decoration: none;
+}
+
+.leasing-requests a:hover {
+    text-decoration: underline;
+}
+
+/* Earnings & Revenue Section */
+.earnings-revenue ul {
+    list-style-type: none;
+    padding: 0;
+}
+
+.earnings-revenue li {
+    border-bottom: 1px solid #ddd;
+    padding: 20px 0;
+    font-size: 1rem;
+}
+
+.earnings-revenue li p {
+    margin: 8px 0;
+}
+
+.earnings-revenue a {
+    color: #007BFF;
+    text-decoration: none;
+}
+
+.earnings-revenue a:hover {
+    text-decoration: underline;
+}
+
+/* Car History Section */
+.car-history ul {
+    list-style-type: none;
+    padding: 0;
+}
+
+.car-history li {
+    border-bottom: 1px solid #ddd;
+    padding: 20px 0;
+    font-size: 1rem;
+}
+
+.car-history li h3 {
+    font-size: 1.2rem;
+    font-weight: bold;
+}
+
+.car-history li p {
+    margin: 8px 0;
+}
+
+.car-history p {
+    font-size: 1rem;
+    color: #555;
+}
+
+.car-history .no-review {
+    color: #ff5733; /* Red color to indicate no review */
+}
+
+/* Empty Section Message */
+p {
+    font-size: 1rem;
+    color: #888;
+}
+
+section .empty-message {
+    text-align: center;
+    font-size: 1rem;
+    color: #888;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .dashboard-container {
+        padding: 10px;
+        margin: 10px;
+    }
+
+    h1 {
+        font-size: 1.6rem;
+    }
+
+    h2 {
+        font-size: 1.3rem;
+    }
+
+    .my-listings li,
+    .leasing-requests li,
+    .earnings-revenue li,
+    .car-history li {
+        padding: 10px 0;
+    }
+
+    a.btn {
+        width: 100%;
+        text-align: center;
+        padding: 12px 0;
+    }
+}

@@ -1,42 +1,49 @@
 {% extends 'base_customer.html' %}
+{% load static %}
 
 {% block content %}
-<h1>My Booking History</h1>
+    <!-- Link to specific CSS for this page -->
+    <link rel="stylesheet" href="{% static 'styles/booking_his.css' %}">
 
-<h2>Upcoming Reservations</h2>
-{% if upcoming_reservations %}
-  <ul>
-    {% for reservation in upcoming_reservations %}
-      <li>
-        <strong>{{ reservation.car.make }} {{ reservation.car.model }}</strong><br>
-        Date: {{ reservation.start_date }} to {{ reservation.end_date }}<br>
-        Total: ${{ reservation.total_amount }}<br>
-        Status: {{ reservation.status }}<br>
-        Payment Status: {{ reservation.payment_status }}<br>
-        <a href="{% url 'cancel_reservation' reservation.id %}">Cancel</a> |
-        <a href="{% url 'modify_reservation' reservation.id %}">Modify</a>
-      </li>
-    {% endfor %}
-  </ul>
-{% else %}
-  <p>You have no upcoming reservations.</p>
-{% endif %}
+    <!-- Booking History Header -->
+    <h1>My Booking History</h1>
 
-<h2>Past Reservations</h2>
-{% if past_reservations %}
-  <ul>
-    {% for reservation in past_reservations %}
-      <li>
-        <strong>{{ reservation.car.make }} {{ reservation.car.model }}</strong><br>
-        Date: {{ reservation.start_date }} to {{ reservation.end_date }}<br>
-        Total: ${{ reservation.total_amount }}<br>
-        Status: {{ reservation.status }}<br>
-        Payment Status: {{ reservation.payment_status }}<br>
-        <a href="{% url 'view_review' reservation.id %}">Leave Review</a>
-      </li>
-    {% endfor %}
-  </ul>
-{% else %}
-  <p>You have no past reservations.</p>
-{% endif %}
+    <!-- Upcoming Reservations Section -->
+    <h2>Upcoming Reservations</h2>
+    {% if upcoming_reservations %}
+        <ul class="reservation-list">
+            {% for reservation in upcoming_reservations %}
+                <li class="reservation-item">
+                    <strong>{{ reservation.car.make }} {{ reservation.car.model }}</strong><br>
+                    <p><strong>Rental Period:</strong> {{ reservation.start_date }} to {{ reservation.end_date }}</p>
+                    <p><strong>Total Amount:</strong> ${{ reservation.total_amount }}</p>
+                    <p><strong>Status:</strong> {{ reservation.status }}</p>
+                    <p><strong>Payment Status:</strong> {{ reservation.payment_status }}</p>
+                    <a href="{% url 'cancel_reservation' reservation.id %}" class="btn cancel-btn">Cancel</a> |
+                    <a href="{% url 'modify_reservation' reservation.id %}" class="btn modify-btn">Modify</a>
+                </li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p>You have no upcoming reservations.</p>
+    {% endif %}
+
+    <!-- Past Reservations Section -->
+    <h2>Past Reservations</h2>
+    {% if past_reservations %}
+        <ul class="reservation-list">
+            {% for reservation in past_reservations %}
+                <li class="reservation-item">
+                    <strong>{{ reservation.car.make }} {{ reservation.car.model }}</strong><br>
+                    <p><strong>Rental Period:</strong> {{ reservation.start_date }} to {{ reservation.end_date }}</p>
+                    <p><strong>Total Amount:</strong> ${{ reservation.total_amount }}</p>
+                    <p><strong>Status:</strong> {{ reservation.status }}</p>
+                    <p><strong>Payment Status:</strong> {{ reservation.payment_status }}</p>
+                    <a href="{% url 'view_review' reservation.id %}" class="btn review-btn">Leave a Review</a>
+                </li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p>You have no past reservations.</p>
+    {% endif %}
 {% endblock %}

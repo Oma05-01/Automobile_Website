@@ -1,7 +1,9 @@
 <!-- owner_profile.html -->
 {% extends "base.html" %}
+{% load static %}
 
 {% block content %}
+  <link rel="stylesheet" href="{% static 'styles/own_prof.css' %}">
   <h2>{{ profile.full_name }}'s Profile</h2>
 
   <div class="profile-info">

@@ -1,11 +1,14 @@
-<!-- car_performance_report.html -->
-
 {% extends "base.html" %}
+{% load static %}
 
 {% block content %}
+<link rel="stylesheet" href="{% static 'styles/car_perm.css' %}">
+
+  <!-- Car Performance Analytics Section -->
   <h2>Car Performance Analytics</h2>
 
-  <table>
+  <!-- Table for Car Performance Data -->
+  <table class="performance-table">
     <thead>
       <tr>
         <th>Car</th>
@@ -26,8 +29,9 @@
     </tbody>
   </table>
 
+  <!-- Recent Performance Section -->
   <h3>Recent Performance (Last 30 Days)</h3>
-  <ul>
+  <ul class="recent-performance-list">
     {% for car in cars_recent_performance %}
       <li>{{ car.make }} {{ car.model }} - Rentals: {{ car.leasing_requests.count }} - Views: {{ car.views }}</li>
     {% endfor %}

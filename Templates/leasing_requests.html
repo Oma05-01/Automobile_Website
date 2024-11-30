@@ -1,9 +1,11 @@
 <!-- templates/car_owner/leasing_requests.html -->
 {% extends 'base.html' %}
+{% load static %}
 
 {% block title %}Leasing Requests{% endblock %}
 
 {% block content %}
+<link rel="stylesheet" href="{% static 'styles/lease_req.css' %}">
   <h1>Leasing Requests</h1>
 
   <table>

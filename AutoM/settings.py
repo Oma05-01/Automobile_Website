@@ -160,5 +160,3 @@ STRIPE_SECRET_KEY = ''
 CELERY_BROKER_URL = 'redis://localhost:6379/0'  # Or your chosen broker (Redis in this case)
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
-
-

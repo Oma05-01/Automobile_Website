@@ -1,7 +1,9 @@
 <!-- my_cars.html -->
 {% extends "base.html" %}
+{% load static %}
 
 {% block content %}
+<link rel="stylesheet" href="{% static 'styles/my_cars.css' %}">
   <h2>My Cars</h2>
 
   <table>

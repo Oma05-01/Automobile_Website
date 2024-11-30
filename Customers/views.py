@@ -37,30 +37,6 @@ def customer_home(request):
     return render(request, 'Customer_Home.html')
 
 
-def customer_login(request):
-    if request.method == 'POST':
-
-        user_ = request.POST.get('username')
-        pass_ = request.POST.get('password')
-
-        check_in = [user_, pass_]
-
-        for it in check_in:
-            if it != '':
-                user = authenticate(username=user_, password=pass_)
-
-                if user is not None and user.is_active:
-                    login(request, user)
-                    return redirect('CUhome')
-                else:
-                    # Return an 'invalid login' error message.
-                    return render(request, 'error.html', {'error_message': 'Invalid login credentials'})
-            else:
-                msg = 'Please, ' + str(it) + ' should be filled'
-                return render(request, 'Customer_login.html', {'msg': msg})
-    return render(request, 'Customer_login.html')
-
-
 def customer_register(request):
     if request.method == "POST":
         # Get form data
@@ -399,6 +375,11 @@ def booking_confirmation(request, reservation_id):
     return render(request, 'car/booking_confirmation.html', {'reservation': reservation})
 
 
+from django.shortcuts import render, get_object_or_404
+from django.utils import timezone
+from datetime import timedelta
+
+
 def availability_calendar(request, car_id):
     car = get_object_or_404(Car, id=car_id)
 
@@ -414,8 +395,19 @@ def availability_calendar(request, car_id):
             booked_dates.append(start_date)
             start_date += timedelta(days=1)
 
-    # Pass the list of booked dates to the template
-    return render(request, 'car/availability_calendar.html', {'car': car, 'booked_dates': booked_dates})
+    # Generate a list of availability dates (for example, next 30 days)
+    today = timezone.now().date()
+    availability_dates = [today + timedelta(days=i) for i in range(30)]  # 30-day calendar
+
+    # Convert booked_dates into a list of strings for easy comparison in the template
+    booked_dates_str = [date.strftime('%Y-%m-%d') for date in booked_dates]
+
+    # Pass the availability and booked dates to the template
+    return render(request, 'car/availability_calendar.html', {
+        'car': car,
+        'availability_dates': availability_dates,
+        'booked_dates': booked_dates_str,
+    })
 
 
 @login_required

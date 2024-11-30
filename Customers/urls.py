@@ -5,7 +5,6 @@ from .views import customer_verify_code
 
 urlpatterns = [
     path('customer_home/', views.customer_home, name='CUhome'),
-    path('customer_login/', views.customer_login, name='customer_login'),
     path('customer_register/', views.customer_register, name='customer_register'),
     path('customer_logout/', views.customer_logout, name='mylogout'),
     path('customer_login/change_password/', views.customer_change_password, name='change_password'),

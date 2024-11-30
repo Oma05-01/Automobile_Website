@@ -50,36 +50,6 @@ def client_home(request):
     })
 
 
-def client_login(request):
-
-    if request.method == 'POST':
-
-        user_ = request.POST.get('username')
-        pass_ = request.POST.get('password')
-
-        check_in = [user_, pass_]
-
-        for it in check_in:
-            if it != '':
-                user = authenticate(username=user_, password=pass_)
-
-                check_client = Client.objects.get(username=user_).username
-                print(user_)
-                print(check_client)
-                if user.username == check_client:
-                    login(request, user)
-                    print('user is client')
-                    return redirect('CLhome')
-                else:
-                    # Return an 'invalid login' error message.
-                    return render(request, 'login.html', {'error_message': 'Invalid login credentials'})
-            else:
-                msg = 'Please, ' + str(it) + ' should be filled'
-                return JsonResponse({'status': 'error', 'msg': msg})
-
-    return render(request, 'client_login.html')
-
-
 def client_register(request):
     if request.method == "POST":
         # Get form data

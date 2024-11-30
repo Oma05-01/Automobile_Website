@@ -1,8 +1,10 @@
 <!-- customer_dashboard.html -->
 
 {% extends 'base_customer.html' %}
+{% load static %}
 
 {% block content %}
+<link rel="stylesheet" href="{% static 'styles/cus_dash.css' %}">
 <h2>Your Dashboard</h2>
 
 <h3>Upcoming and Past Rentals</h3>

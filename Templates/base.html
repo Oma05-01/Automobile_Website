@@ -1,4 +1,5 @@
 <!-- templates/base.html -->
+{% load static %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -7,7 +8,7 @@
     <title>{% block title %}Car Rental Dashboard{% endblock %}</title>
 
     <!-- Include your CSS files here -->
-    <link rel="stylesheet" href="{% static 'css/styles.css' %}">  <!-- Example for CSS -->
+    <link rel="stylesheet" href="{% static 'styles/styles.css' %}">  <!-- Example for CSS -->
 
     <!-- You can include JavaScript here if needed -->
     <script src="{% static 'js/script.js' %}"></script>
@@ -19,9 +20,7 @@
     <header>
         <nav>
             <ul>
-                <li><a href="{% url 'home' %}">Home</a></li>
-                <li><a href="{% url 'car_owner_dashboard' %}">Dashboard</a></li>
-                <li><a href="{% url 'logout' %}">Logout</a></li>
+<!--                -->
             </ul>
         </nav>
     </header>
