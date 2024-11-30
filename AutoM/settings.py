@@ -120,8 +120,17 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.0/howto/static-files/
 
+# Static files URL (the URL where static files are served from)
 STATIC_URL = 'static/'
-STATIC_ROOT = os.path.join(BASE_DIR, 'static')
+
+# The directories to look for static files (app-level static files and project-level static files)
+STATICFILES_DIRS = [
+    BASE_DIR / 'static',  # project-level static files directory
+]
+
+# Static root directory where static files will be collected to during production
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')  # Only for production use
+
 
 MEDIA_URL = 'media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
@@ -144,6 +153,7 @@ EMAIL_HOST_PASSWORD = 'mgtj dweb qvqb zsgf'  # Replace with your Gmail password 
 STRIPE_TEST_PUBLIC_KEY = 'your-stripe-public-key'
 STRIPE_TEST_SECRET_KEY = 'your-stripe-secret-key'
 STRIPE_WEBHOOK_SECRET = 'your-webhook-signing-secret'
+STRIPE_SECRET_KEY = ''
 
 
 # Celery configuration

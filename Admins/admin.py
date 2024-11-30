@@ -1,6 +1,6 @@
 from django.contrib import admin
-from .models import Admin_
+from .models import Dates
 # Register your models here.
 
 
-admin.site.register(Admin_)
+admin.site.register(Dates)

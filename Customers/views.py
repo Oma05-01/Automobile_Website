@@ -12,7 +12,7 @@ import string
 from django.core.mail import send_mail
 from django.http import JsonResponse
 from .models import *
-from Admins.models import Dates
+from Admins.models import *
 import json
 from django.db.models import Q
 from django.contrib.auth.decorators import login_required

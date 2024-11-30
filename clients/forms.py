@@ -6,7 +6,7 @@ from .models import *
 class CarForm(forms.ModelForm):
     class Meta:
         model = Car
-        fields = ['Car_name', 'pic_name', 'picurl', 'Description', 'Available_for_testing', 'date']
+        fields = ['make', 'model', 'pic_url', 'description', 'available_for_testing', 'date']
         widgets = {
             'Available_for_testing': forms.RadioSelect(choices=Car.AVAILABILITY_CHOICES),
         }

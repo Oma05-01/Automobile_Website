@@ -3,7 +3,7 @@ from django.contrib.auth.models import User
 from django.core.exceptions import ObjectDoesNotExist
 from django.contrib import messages
 
-from .models import Customer
+from .models import *
 from clients.models import *
 
 
@@ -33,27 +33,6 @@ class CustomUserAdmin(admin.ModelAdmin):
     actions = [delete_users_and_customer]
 
 
-class CarAdmin(admin.ModelAdmin):
-    list_display = ('make', 'model', 'owner', 'price_per_day', 'is_active', 'available_for_testing')
-    list_filter = ('is_active', 'available_for_testing')
-    search_fields = ('make', 'model', 'owner__username')
-
-    # Add more fields for detailed view
-    fieldsets = (
-        ('Car Details', {
-            'fields': ('make', 'model', 'price_per_day', 'description', 'is_active', 'available_for_testing', 'test_drive_fee', 'test_location')
-        }),
-        ('Owner Details', {
-            'fields': ('owner',)
-        }),
-    )
-
-    def get_queryset(self, request):
-        queryset = super().get_queryset(request)
-        if request.user.is_superuser:
-            return queryset
-        return queryset.filter(owner=request.user)
-
 class LeasingRequestAdmin(admin.ModelAdmin):
     list_display = ('car', 'renter', 'start_date', 'end_date', 'status')
     list_filter = ('status', 'car', 'renter')
@@ -65,10 +44,8 @@ class PaymentAdmin(admin.ModelAdmin):
 class RentalHistoryAdmin(admin.ModelAdmin):
     list_display = ('car', 'renter', 'start_date', 'end_date', 'total_amount', 'review')
 
-admin.site.register(Car, CarAdmin)
 admin.site.register(LeasingRequest, LeasingRequestAdmin)
 admin.site.register(Payment, PaymentAdmin)
 admin.site.register(RentalHistory, RentalHistoryAdmin)
-admin.site.register(Review)
 admin.site.unregister(User)
 admin.site.register(User, CustomUserAdmin)

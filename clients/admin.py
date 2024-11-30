@@ -33,16 +33,31 @@ class CustomUsersAdmin(admin.ModelAdmin):
 
 
 class CarAdmin(admin.ModelAdmin):
-    list_display = ('make', 'model', 'owner', 'price_per_day', 'is_active', 'Available_for_testing')
-    list_filter = ('owner', 'is_active', 'Available_for_testing')
-    search_fields = ('make', 'model')
+    list_display = ('make', 'model', 'owner', 'price_per_day', 'is_active', 'available_for_testing')
+    list_filter = ('is_active', 'available_for_testing')
+    search_fields = ('make', 'model', 'owner__username')
+
+    # Add more fields for detailed view
+    fieldsets = (
+        ('Car Details', {
+            'fields': ('make', 'model', 'price_per_day', 'description', 'is_active', 'available_for_testing', 'test_drive_fee', 'test_location')
+        }),
+        ('Owner Details', {
+            'fields': ('owner',)
+        }),
+    )
+
+    def get_queryset(self, request):
+        queryset = super().get_queryset(request)
+        if request.user.is_superuser:
+            return queryset
+        return queryset.filter(owner=request.user)
 
 
 admin.site.unregister(User)
 admin.site.register(User, CustomUsersAdmin)
-admin.site.register(Car)
+admin.site.register(Car, CarAdmin)
 admin.site.register(Review)
 admin.site.register(CarMaintenance)
 admin.site.register(DamageReport)
 admin.site.register(MaintenanceReminder)
-admin.site.register(Car, CarAdmin)
