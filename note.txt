@@ -5,3 +5,5 @@ Loyalty Rewards: Offer loyalty points or discounts to customers who frequently r
 Promo Codes: Allow customers to apply promo codes during the checkout process to receive discounts. - this one is later abeg
 
 <link rel="stylesheet" href="{% static 'styles/admin_dash.css' %}">
+
+the footer in the faq page and the header has one weird styling

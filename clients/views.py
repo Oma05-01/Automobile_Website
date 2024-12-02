@@ -20,7 +20,10 @@ from reportlab.pdfgen import canvas
 from io import BytesIO
 from django.http import HttpResponse
 from django.db.models import Sum, Count
+import os
 from django.contrib.auth import get_user_model
+from django.core.exceptions import *
+
 
 # Stripe API keys
 stripe.api_key = settings.STRIPE_TEST_SECRET_KEY
@@ -29,6 +32,19 @@ stripe.api_key = settings.STRIPE_TEST_SECRET_KEY
 # Create your views here.
 @login_required
 def client_home(request):
+    leasing_requests = LeasingRequest.objects.filter(renter=request.user, status='pending')
+    current_bookings = LeasingRequest.objects.filter(renter=request.user, status='confirmed')
+    payments = Payment.objects.filter(leasing_request__renter=request.user).order_by('-paid_at')
+
+    return render(request, 'client_home.html', {
+        'leasing_requests': leasing_requests,
+        'current_bookings': current_bookings,
+        'payments': payments,
+    })
+
+
+@login_required
+def client_dashboard(request):
     # Fetch the current user's car listings
     cars = Car.objects.filter(owner=request.user)
 
@@ -42,7 +58,7 @@ def client_home(request):
     rental_history = RentalHistory.objects.filter(car__owner=request.user)
 
     # Render the dashboard template with the necessary context
-    return render(request, 'client_Home.html', {
+    return render(request, 'client_dashboard.html', {
         'cars': cars,
         'leasing_requests': leasing_requests,
         'payments': payments,
@@ -164,9 +180,10 @@ def send_verification_email(request, user):
 
 
 def client_logout(request):
+
     logout(request)
 
-    return render(request, 'Client_Home.html')
+    return redirect('login')
 
 
 def client_change_password(request):
@@ -242,57 +259,65 @@ def new_post(request):
         return redirect('login')
 
     if request.method == 'POST':
-        name = request.POST.get('name')
-        Desc = request.POST.get('description')
+        # Get data from the form
+        make = request.POST.get('make')
+        model = request.POST.get('model')
+        year = request.POST.get('year')
+        description = request.POST.get('description')
         available_for_testing = request.POST.get('available_for_testing')
         test_location = request.POST.get('test_location')
-        price = float(request.POST.get('price'))
+        price_per_day = request.POST.get('price_per_day')
+        test_drive_fee = request.POST.get('test_drive_fee', 0)  # Default to 0 if not provided
+        insurance_document = request.FILES.get('insurance_document')
+        rental_agreement_document = request.FILES.get('rental_agreement_document')
+        mileage = request.POST.get('mileage', 0)  # Default to 0 if not provided
+        maintenance_due_date = request.POST.get('maintenance_due_date')
 
+        # Handle the date format
         date = datetime.datetime.now()
-        day = date.day
-        year = date.year
-        month = date.month
+        date_str = date.strftime("%Y/%m/%d")
 
-        date1 = f"{year}/{month}/{day}"
-
-        if not name or not Desc or not available_for_testing:
+        # Ensure required fields are present
+        if not make or not model or not description or not available_for_testing or not year:
             error = 'All Fields Required'
             return render(request, 'back/error.html', {'error': error})
 
         try:
-            myfile = request.FILES['myfile']
-            fs = FileSystemStorage()
-            filename = fs.save(myfile.name, myfile)
-            url = fs.url(filename)
-
-            if str(myfile.content_type).startswith('image'):
-                if myfile.size < 500000000:
-                    b = Car(
-                        Car_name=name,
-                        pic_name=str(filename),
-                        picurl=str(url),
-                        date=date1,
-                        Description=Desc,
-                        Available_for_testing=available_for_testing,
-                        test_location=test_location,
-                        price=price
-                    )
-                    b.save()
-                    return redirect('Car_listings')
-                else:
-                    fs.delete(filename)
-                    error = 'Your file is bigger than 5MB'
-                    print(error)
-                    return render(request, 'back/error.html', {'error': error})
+            # Handle image upload for 'pic_url'
+            if 'pic_url' in request.FILES:
+                pic_file = request.FILES['pic_url']
+                fs = FileSystemStorage()
+                pic_filename = fs.save(pic_file.name, pic_file)
+                pic_url = fs.url(pic_filename)
             else:
-                fs.delete(filename)
-                error = 'Your file is not supported'
-                print(error)
-                return render(request, 'back/error.html', {'error': error})
+                pic_url = ''  # Default empty if no picture uploaded
+
+            # Create the new Car object
+            car = Car(
+                owner=request.user,  # The logged-in user is the owner
+                make=make,
+                model=model,
+                year=int(year),
+                pic_url=pic_url,  # Picture URL saved from file upload
+                price_per_day=float(price_per_day),
+                date=date_str,
+                description=description,
+                is_active=True,  # Set as active by default
+                available_for_testing=available_for_testing,
+                test_drive_fee=float(test_drive_fee),
+                test_location=test_location,
+                maintenance_due_date=maintenance_due_date if maintenance_due_date else None,
+                insurance_document=insurance_document,
+                rental_agreement_document=rental_agreement_document,
+                mileage=int(mileage),
+            )
+            car.save()  # Save the car object to the database
+
+            return redirect('cars_list')  # Redirect to the car listings page
 
         except Exception as e:
-            error = f'INVALID: {str(e)}'
-            print(e)
+            # Handle errors such as file upload issues
+            error = f'Error: {str(e)}'
             return render(request, 'back/error.html', {'error': error})
 
     return render(request, 'New_post.html')
@@ -306,93 +331,125 @@ def car_detail(request, car_id):
 
 
 def edit_post(request, pk):
-
     if not request.user.is_authenticated:
         return redirect('login')
 
-    if len(Car.objects.filter(pk=pk)) == 0:
-        error = 'Car Not Found'
-        return render(request, 'back/error.html', {'error': error})
-
-    car_ = Car.objects.get(pk=pk)
+    # Fetch the car object or return a 404 error if not found
+    car_ = get_object_or_404(Car, pk=pk)
 
     if request.method == 'POST':
-        name = request.POST.get('name')
+        # Get the updated data from the POST request
+        name = request.POST.get('make')
         desc = request.POST.get('description')
 
-        if name == "" or desc == "":
-            error = 'All Fields Required'
-            # for error to show in the html page, it needs to be placed in a dict {'error': error}
+        # Check if required fields are empty
+        if not name or not desc:
+            error = 'All fields are required.'
             return render(request, 'back/error.html', {'error': error})
 
         try:
-            myfile = request.FILES['myfile']
-            fs = FileSystemStorage()
-            filename = fs.save(myfile.name, myfile)
-            url = fs.url(filename)
-
-            if str(myfile.content_type).startswith('image'):
-
-                if myfile.size < 5000000:
-
-                    b = Car.objects.get(pk=pk)
-
-                    fss = FileSystemStorage()
-                    fss.delete(b.picname)
-
-                    b.Car_name = name
-                    b.Description = desc
-                    b.picname = filename
-                    b.picurl = url
-
-                    b.save()
-
-                    return redirect('car_list')
-                else:
-                    fs = FileSystemStorage()
-                    fs.delete(myfile)
-
-                    error = 'Your file Is Bigger Than 5Mb'
-                    return render(request, 'back/error.html', {'error': error})
-            else:
+            # If a new file is uploaded
+            if 'myfile' in request.FILES:
+                myfile = request.FILES['myfile']
                 fs = FileSystemStorage()
-                fs.delete(filename)
 
-                error = 'Your file Is Not Supported'
-                return render(request, 'back/error.html', {'error': error})
+                # Validate if the file is an image and under 5MB
+                if not str(myfile.content_type).startswith('image'):
+                    error = 'Your file is not supported.'
+                    return render(request, 'back/error.html', {'error': error})
 
-        except:
+                if myfile.size > 5000000:
+                    error = 'Your file is bigger than 5MB.'
+                    return render(request, 'back/error.html', {'error': error})
 
-            b = Car.objects.get(pk=pk)
+                # Delete the old image from storage if it's being replaced
+                if car_.picname:
+                    fss = FileSystemStorage()
+                    fss.delete(car_.picname)
 
-            b.Car_name = name
-            b.Description = desc
+                # Save the new image and update the URL
+                filename = fs.save(myfile.name, myfile)
+                url = fs.url(filename)
 
-            b.save()
+                # Update the car object with the new data
+                car_.picname = filename
+                car_.picurl = url
 
+            # Update the other fields (name and description)
+            car_.Car_name = name
+            car_.Description = desc
+
+            # Save the updated car object
+            car_.save()
+
+            # Redirect to the car listings page after successful update
             return redirect('car_list')
 
-    return render(request, 'Edit_post.html')
+        except Exception as e:
+            # Catch any unexpected errors and display a generic error message
+            error = f"An error occurred: {str(e)}"
+            return render(request, 'back/error.html', {'error': error})
+
+    # Render the edit form with the current car details
+    return render(request, 'Edit_post.html', {'car': car_})
 
 
 def delete_post(request, pk):
-
     if not request.user.is_authenticated:
         return redirect('login')
 
     try:
-        b = Car.objects.get(pk=pk)
+        # Fetch the car object to be deleted
+        car = Car.objects.get(pk=pk)
 
+        # Check if the logged-in user is the owner of the car
+        if car.owner != request.user:
+            return redirect('cars_list')  # Unauthorized access: user is not the owner of the car
+
+        # List of files to delete (pic_url, insurance_document, rental_agreement_document)
+        files_to_delete = []
+        if car.pic_url:
+            # Strip the /media/ prefix and combine with MEDIA_ROOT to get the absolute file path
+            file_path = os.path.join(settings.MEDIA_ROOT, car.pic_url.name.lstrip('/media/'))
+            print(f"Full file path for pic_url: {file_path}")
+            files_to_delete.append(file_path)
+
+        if car.insurance_document:
+            file_path = os.path.join(settings.MEDIA_ROOT, car.insurance_document.name)
+            files_to_delete.append(file_path)
+
+        if car.rental_agreement_document:
+            file_path = os.path.join(settings.MEDIA_ROOT, car.rental_agreement_document.name)
+            files_to_delete.append(file_path)
+
+        # Loop through the files to delete and remove them from the file system
         fs = FileSystemStorage()
-        fs.delete(b.picname)
+        for file_path in files_to_delete:
+            # Ensure the file path is inside MEDIA_ROOT to avoid security issues
+            if file_path.startswith(settings.MEDIA_ROOT):
+                fs.delete(file_path)  # Delete the file from the file system
+            else:
+                # If file is outside of MEDIA_ROOT, raise an exception
+                raise SuspiciousFileOperation(f"Attempt to delete a file outside of MEDIA_ROOT: {file_path}")
 
-        b.delete()
+        # Now delete the car object itself
+        car.delete()
 
-    except:
-        error = 'Something wrong'
-        return render(request, 'back/error.html', {'error': error})
+        return redirect('cars_list')  # Redirect to the car listings page
 
-    return redirect('cars_list')
+    except Car.DoesNotExist:
+        # If the car doesn't exist, return to the car listings page
+        return redirect('cars_list')
+
+    except SuspiciousFileOperation as e:
+        # Handle any suspicious file operation (deleting files outside MEDIA_ROOT)
+        error = f"Error: {e}"
+        return render(request, 'error.html', {'error': error})
+
+    except Exception as e:
+        # Catch other exceptions (e.g., database or file handling errors)
+        error = f"An unexpected error occurred: {str(e)}"
+        return render(request, 'error.html', {'error': error})
 
 
 def my_cars(request):
@@ -426,7 +483,8 @@ def client_verify_code(request):
                 profile.is_verified = True
                 profile.save()
                 print('yes?')
-                return redirect('Client_login')  # Redirect to login page after verification
+                messages.success(request, 'Registration successful! You can now log in.')
+                return redirect('login')  # Redirect to login page after verification
             else:
                 # User is already active
                 context = {'error_message': 'User is already active.'}
@@ -446,7 +504,7 @@ def leasing_requests(request):
     # Fetch leasing requests for cars owned by the logged-in user
     requests = LeasingRequest.objects.filter(car__owner=request.user)
 
-    return render(request, 'car_owner/leasing_requests.html', {
+    return render(request, 'leasing_requests.html', {
         'requests': requests
     })
 

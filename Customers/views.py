@@ -3,7 +3,6 @@ from clients.models import *
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
-from django.core.mail import send_mail
 from django.template.loader import render_to_string
 from django.utils.html import strip_tags
 from django.contrib.sites.shortcuts import get_current_site
@@ -24,6 +23,7 @@ import stripe
 from django.conf import settings
 from django.http import HttpResponseForbidden
 from .forms import *
+from decimal import Decimal
 
 
 stripe.api_key = settings.STRIPE_SECRET_KEY
@@ -169,7 +169,7 @@ def customer_verify_code(request):
                 user.save()
                 profile.is_verified = True
                 profile.save()
-                return redirect('customer_login')  # Redirect to login page after verification
+                return redirect('login')  # Redirect to login page after verification
             else:
                 # User is already active
                 context = {'error_message': 'User is already active.'}
@@ -194,7 +194,7 @@ def customer_logout(request):
 
     logout(request)
 
-    return redirect('Customer_login')
+    return redirect('login')
 
 
 def customer_change_password(request):
@@ -274,19 +274,29 @@ def search_car(request):
     # Handle search query
     if 'searched' in request.GET:
         searched_car = request.GET.get('searched')
-        cars = cars.filter(Car_name__icontains=searched_car)  # Case insensitive search
+        cars = cars.filter(make__icontains=searched_car)  # Case insensitive search
     else:
         searched_car = ""
 
     # Apply filters based on form input (if any)
     if 'car_type' in request.GET:
         car_type = request.GET.get('car_type')
-        cars = cars.filter(car_type=car_type)
+        cars = cars.filter(model=car_type)
 
-    if 'min_price' in request.GET and 'max_price' in request.GET:
+    if 'min_price' in request.GET and request.GET['min_price'] != "" and 'max_price' in request.GET and request.GET['max_price'] != "":
         min_price = request.GET.get('min_price')
         max_price = request.GET.get('max_price')
+
+        # Convert min_price and max_price to Decimal
+        if min_price:
+            min_price = Decimal(min_price)
+        if max_price:
+            max_price = Decimal(max_price)
+
         cars = cars.filter(price_per_day__gte=min_price, price_per_day__lte=max_price)
+
+    else:
+        pass
 
     if 'year' in request.GET:
         year = request.GET.get('year')
@@ -298,11 +308,11 @@ def search_car(request):
 
     if 'location' in request.GET:
         location = request.GET.get('location')
-        cars = cars.filter(location__icontains=location)
+        cars = cars.filter(test_location__icontains=location)
 
     if 'available_for_testing' in request.GET:
         available_for_testing = request.GET.get('available_for_testing')
-        cars = cars.filter(Available_for_testing=available_for_testing)
+        cars = cars.filter(available_for_testing=available_for_testing)
 
     # Sorting
     if 'sort_by' in request.GET:
@@ -317,16 +327,25 @@ def search_car(request):
             cars = cars.order_by('-rating')  # Assuming you have a rating field
 
     # Car comparison (optional)
-    selected_cars = request.session.get('selected_cars', [])
+    selected_car_ids = request.session.get('selected_cars', [])  # Get selected car IDs from session
     if 'compare_cars' in request.GET:
         compare_car_ids = request.GET.getlist('compare_cars')
-        selected_cars = Car.objects.filter(id__in=compare_car_ids)
-        request.session['selected_cars'] = [car.id for car in selected_cars]
+
+        # Update the session with new selected car IDs
+        selected_car_ids.extend([car_id for car_id in compare_car_ids if car_id not in selected_car_ids])
+        request.session['selected_cars'] = selected_car_ids  # Update the session
+
+        # Fetch the selected cars using the IDs stored in session
+        selected_cars = Car.objects.filter(id__in=selected_car_ids)
+    else:
+        # If no cars are selected for comparison, fetch only the selected ones stored in the session
+        selected_cars = Car.objects.filter(id__in=selected_car_ids)
 
     return render(request, 'car_search.html', {
         'searched_car': searched_car,
         'cars': cars,
-        'selected_cars': selected_cars
+        'selected_cars': selected_cars,
+        'selected_car_ids': selected_car_ids,  # Pass selected car IDs to template
     })
 
 
@@ -523,7 +542,7 @@ def booking_history(request):
     upcoming_reservations = Reservation.objects.filter(renter=request.user, end_date__gte=datetime.date.today(), status__in=['confirmed', 'pending'])
     past_reservations = Reservation.objects.filter(renter=request.user, end_date__lt=datetime.date.today(), status='confirmed')
 
-    return render(request, 'customer/booking_history.html', {
+    return render(request, 'booking_history.html', {
         'upcoming_reservations': upcoming_reservations,
         'past_reservations': past_reservations
     })
@@ -568,7 +587,7 @@ def modify_reservation(request, reservation_id):
     else:
         form = ReservationForm(instance=reservation)
 
-    return render(request, 'customer/modify_reservation.html', {
+    return render(request, 'modify_reservation.html', {
         'form': form,
         'reservation': reservation
     })
@@ -587,7 +606,7 @@ def manage_profile(request):
     else:
         form = CustomerProfileForm(instance=profile)
 
-    return render(request, 'customer/manage_profile.html', {'form': form, 'profile': profile})
+    return render(request, 'manage_profile.html', {'form': form, 'profile': profile})
 
 
 def contact_support(request):
@@ -608,17 +627,17 @@ def contact_support(request):
             )
 
             # Optional: Provide a thank you message
-            return render(request, 'support/contact_success.html')
+            return render(request, 'contact_success.html')
 
     else:
         form = ContactForm()
 
-    return render(request, 'support/contact.html', {'form': form})
+    return render(request, 'contact.html', {'form': form})
 
 
 def faq_view(request):
     faqs = FAQ.objects.all()
-    return render(request, 'support/faq.html', {'faqs': faqs})
+    return render(request, 'faq.html', {'faqs': faqs})
 
 
 def confirm_booking(request, car_id):
@@ -690,6 +709,28 @@ def customer_dashboard(request):
 
     return render(request, 'customer_dashboard.html', context)
 
+
+@login_required
+def customer_reviews(request):
+    # Fetch reviews written by the customer (the user)
+    reviews_written = Review.objects.filter(renter=request.user)
+
+    # Fetch reviews received by the customer (the user) for the cars they rented out
+    reviews_received = Review.objects.filter(car__renter=request.user)
+
+    return render(request, 'customer_reviews.html', {
+        'reviews_written': reviews_written,
+        'reviews_received': reviews_received,
+    })
+
+
+@login_required
+def pending_requests(request):
+    user = request.user
+    # Fetch all pending requests for the current logged-in user
+    pending_requests = LeasingRequest.objects.filter(renter=user, status='pending')
+
+    return render(request, 'pending_requests.html', {'pending_requests': pending_requests})
 
 
 

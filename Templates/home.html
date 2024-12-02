@@ -18,8 +18,8 @@
                 <ul>
                     <li><a href="#features">Features</a></li>
                     <li><a href="#pricing">Pricing</a></li>
-                    <li><a href="#contact">Contact</a></li>
-                    <li><a href="#contact">Log in</a></li>
+                    <li><a href="{% url 'contact_support' %}">Contact</a></li>
+                    <li><a href="{% url 'login' %}">Log in</a></li>
                     <li><a href="{% url 'profile-explanation' %}">Sign up</a></li>
                 </ul>
             </nav>
@@ -65,19 +65,19 @@
                     <h3>Basic Plan</h3>
                     <p>$299/month</p>
                     <p>For individuals and small families. Includes a range of economy cars.</p>
-                    <a href="" class="cta-button">Sign Up</a>
+                    <a href="profile-explanation" class="cta-button">Sign Up</a>
                 </div>
                 <div class="pricing-card">
                     <h3>Premium Plan</h3>
                     <p>$499/month</p>
                     <p>Perfect for business professionals. Includes mid-range to luxury cars.</p>
-                    <a href="#contact" class="cta-button">Sign Up</a>
+                    <a href="profile-explanation" class="cta-button">Sign Up</a>
                 </div>
                 <div class="pricing-card">
                     <h3>Luxury Plan</h3>
                     <p>$799/month</p>
                     <p>For those who want the best. Includes high-end luxury cars and SUVs.</p>
-                    <a href="#contact" class="cta-button">Sign Up</a>
+                    <a href="profile-explanation" class="cta-button">Sign Up</a>
                 </div>
             </div>
         </div>
@@ -89,7 +89,7 @@
             <h2>Contact Us</h2>
             <p>Ready to lease your next car? Get in touch with us to find out more about our offerings and make your choice.</p>
             <br><br>
-            <a href="mailto:info@carlease.com" class="cta-button">Email Us</a>
+            <a href="{% url 'contact_support' %}" class="cta-button">Email Us</a>
         </div>
     </section>
 

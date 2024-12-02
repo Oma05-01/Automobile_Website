@@ -5,95 +5,100 @@
     box-sizing: border-box;
 }
 
+/* Body Styling */
 body {
     font-family: 'Arial', sans-serif;
-    background-color: #f4f7fc;
+    background-color: #f4f4f4;
     color: #333;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
-    margin: 0;
+    padding: 20px;
 }
 
+/* Form Styling */
 h2 {
     font-size: 2rem;
+    color: #333;
     margin-bottom: 20px;
-    color: #007BFF;
     text-align: center;
 }
 
-/* Form Styles */
 form {
-    background-color: white;
-    padding: 20px;
+    background-color: #fff;
+    padding: 30px;
     border-radius: 8px;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
     width: 100%;
-    max-width: 400px;
+    max-width: 600px;
+    margin: 0 auto;
 }
 
+/* Form Input and Label Styling */
 label {
-    display: block;
     font-size: 1rem;
-    color: #555;
-    margin-bottom: 5px;
+    margin-bottom: 8px;
+    display: block;
+    color: #333;
 }
 
-input[type="text"], input[type="email"], input[type="password"] {
+input[type="text"],
+input[type="email"],
+input[type="password"] {
     width: 100%;
     padding: 10px;
-    margin-bottom: 15px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
     font-size: 1rem;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    margin-bottom: 15px;
+    box-sizing: border-box;
 }
 
-input[type="text"]:focus, input[type="email"]:focus, input[type="password"]:focus {
-    border-color: #007BFF;
+input[type="text"]:focus,
+input[type="email"]:focus,
+input[type="password"]:focus {
+    border-color: #007bff;
     outline: none;
 }
 
+/* Submit Button */
 button {
     width: 100%;
     padding: 12px;
-    background-color: #007BFF;
+    background-color: #007bff;
     color: white;
     border: none;
-    border-radius: 4px;
-    font-size: 1rem;
+    border-radius: 6px;
+    font-size: 1.1rem;
     cursor: pointer;
-    transition: background-color 0.3s;
 }
 
 button:hover {
     background-color: #0056b3;
 }
 
-button:active {
-    background-color: #004080;
-}
-
-/* Error message */
+/* Error message styling */
 p {
     color: red;
-    font-size: 0.9rem;
-    margin-bottom: 15px;
+    font-size: 1rem;
+    text-align: center;
+    margin-top: 15px;
 }
 
 /* Responsive Design */
 @media (max-width: 768px) {
-    body {
-        padding: 20px;
-        height: auto;
-    }
-
-    form {
-        padding: 15px;
-        width: 100%;
-    }
-
     h2 {
-        font-size: 1.5rem;
+        font-size: 1.8rem;
+    }
+
+    label {
+        font-size: 0.9rem;
+    }
+
+    input[type="text"],
+    input[type="email"],
+    input[type="password"] {
+        font-size: 1rem;
+    }
+
+    button {
+        font-size: 1rem;
     }
 }

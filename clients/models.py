@@ -1,12 +1,8 @@
 from django.db import models
-from django.contrib.auth.models import User
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 import logging
 import datetime
-# Create your models here.
-
-# models.py
 from django.db import models
 from django.contrib.auth.models import User
 
@@ -19,8 +15,8 @@ class Car(models.Model):
     make = models.CharField(max_length=100)
     model = models.CharField(max_length=100)
     year = models.IntegerField()
-    pic_url = models.ImageField()
-    price_per_day = models.DecimalField(max_digits=10, decimal_places=2)
+    pic_url = models.ImageField(upload_to='media/', blank=True, null=True)
+    price_per_day = models.DecimalField(max_digits=10, decimal_places=2, null=True)
     date = models.CharField(max_length=50, default="")
     description = models.TextField()
     is_active = models.BooleanField(default=True)

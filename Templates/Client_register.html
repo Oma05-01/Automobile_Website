@@ -7,7 +7,7 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>User Registration</title>
-    <link rel="stylesheet" href="{% static 'styles/client_reg.css' %}">
+    <link rel="stylesheet" href="{% static 'styles/client_reg.css' %}?v=1">
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
     <script>
         $(document).ready(function() {
@@ -88,7 +88,7 @@
         <input type="text" id="Last_name" name="Last_name"><br><br>
 
         <label for="username">Username:</label><br>
-        <input type="text" id="username" name="username"><br><br>
+        <input type="text" id="username" name="username" placeholder="Will be used for logging in"><br><br>
 
         <label for="email">Email:</label><br>
         <input type="email" id="email" name="email"><br><br>
@@ -97,7 +97,7 @@
         <input type="text" id="phone_number" name="phone_number"><br><br>
 
         <label for="password1">Password:</label><br>
-        <input type="password" id="password1" name="password1"><br><br>
+        <input type="password" id="password1" name="password1" placeholder="Will be used for logging in"><br><br>
 
         <label for="password2">Confirm Password:</label><br>
         <input type="password" id="password2" name="password2"><br><br>

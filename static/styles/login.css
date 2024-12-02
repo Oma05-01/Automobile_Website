@@ -1,106 +1,166 @@
-/* Landing Page Styles */
-body {
-    font-family: 'Roboto', sans-serif;
+/* Apply basic reset */
+* {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
 }
 
-.container {
-    width: 80%;
-    margin: 0 auto;
+/* Make the body a flex container */
+body {
+    font-family: 'Roboto', sans-serif;
+    display: flex;
+    flex-direction: column;
+    height: 100vh; /* Full viewport height */
 }
 
-/* Navbar */
+/* The container for the whole page content */
+.container {
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 15px;
+}
+
+/* Navbar styles */
 .navbar {
     background-color: #333;
-    color: #fff;
-    padding: 20px 0;
+    padding: 15px 0;
 }
 
 .navbar .logo {
-    font-size: 1.5em;
-    font-weight: bold;
+    color: white;
+    font-size: 1.5rem;
+    font-weight: 700;
+}
+
+.navbar .logo a {
+    color: white !important;  /* Override any default color */
+    text-decoration: none !important;  /* Remove underline */
+    font-size: 1.8rem;  /* Set the font size */
+    font-weight: bold;  /* Make it bold */
+    text-transform: uppercase;  /* Uppercase the text */
 }
 
 .navbar nav ul {
-    list-style-type: none;
-    display: flex;
-    gap: 20px;
-    margin: 0;
-    padding: 0;
+    list-style: none;
+    padding-left: 0;
+    text-align: right;
 }
 
 .navbar nav ul li {
-    display: inline;
+    display: inline-block;
+    margin: 0 15px;
 }
 
 .navbar nav ul li a {
-    color: #fff;
+    color: white;
     text-decoration: none;
     font-weight: 500;
 }
 
-.navbar nav ul li a:hover {
-    text-decoration: underline;
+/* Login Section Styles */
+.login {
+    flex-grow: 1; /* Allow the login section to grow and take available space */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 40px 0;
+    background-color: #f7f7f7;
 }
 
-/* Sign Up & Login Forms */
-form {
-    background-color: #f4f4f4;
-    padding: 20px;
+.login .container {
+    background-color: white;
+    padding: 40px;
     border-radius: 8px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    width: 100%;
+    max-width: 400px;
 }
 
 h2 {
-    text-align: center;
-    font-size: 2em;
+    font-size: 2rem;
     margin-bottom: 20px;
+    text-align: center;
+    color: #333;
 }
 
 .form-group {
-    margin-bottom: 15px;
+    margin-bottom: 20px;
 }
 
 .form-group label {
     display: block;
-    font-weight: bold;
-    margin-bottom: 5px;
+    font-size: 14px;
+    color: #555;
+    margin-bottom: 8px;
 }
 
-.form-group input {
+.form-control {
     width: 100%;
     padding: 10px;
-    border: 1px solid #ddd;
+    font-size: 16px;
+    border: 1px solid #ccc;
     border-radius: 5px;
-    font-size: 1em;
-}
-
-.form-group input:focus {
-    border-color: #007bff;
-    outline: none;
 }
 
 .cta-button {
-    background-color: #007bff;
+    background-color: #28a745;
     color: white;
-    padding: 12px 20px;
+    font-size: 16px;
+    padding: 12px;
     border: none;
     border-radius: 5px;
-    width: 100%;
     cursor: pointer;
-    font-size: 1.1em;
+    width: 100%;
+    transition: background-color 0.3s ease;
 }
 
 .cta-button:hover {
-    background-color: #0056b3;
+    background-color: #218838;
 }
 
-/* Footer */
+/* Footer Styles */
 footer {
     background-color: #333;
     color: white;
-    padding: 20px 0;
     text-align: center;
+    padding: 15px;
+    font-size: 14px;
+}
+
+footer p {
+    margin: 0;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 600px) {
+    .navbar nav ul li {
+        margin: 0 10px;
+    }
+
+    h2 {
+        font-size: 1.5rem;
+    }
+
+    .form-control {
+        padding: 12px;
+    }
+
+    .cta-button {
+        padding: 15px;
+    }
+}
+
+.alert {
+    background-color: #f8d7da;
+    color: #721c24;
+    padding: 15px;
+    margin-bottom: 20px;
+    border-radius: 5px;
+    border: 1px solid #f5c6cb;
+}
+
+.alert-message {
+    margin: 0;
+    font-size: 16px;
 }

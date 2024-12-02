@@ -20,6 +20,7 @@ def delete_users_and_clients(modeladmin, request, queryset):
             messages.error(request, f'Error deleting user {user.username}: {e}')
 
 
+
 @admin.register(Client)
 class ClientAdmin(admin.ModelAdmin):
     list_display = ('First_name', 'Last_name', 'username', 'email', 'phone_number', 'date_created', 'is_client')

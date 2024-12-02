@@ -4,10 +4,11 @@ from .views import client_verify_code
 
 urlpatterns = [
     # path('home/<str:icon>', views.client_home, name='home'),
-    path('client_home/', views.client_home, name='CLhome'),
+    path('client_home/', views.client_home, name='client_home'),
+    path('client_dashboard/', views.client_dashboard, name='client_dashboard'),
     path('client-register/', views.client_register, name='client_register'),
     path('client_verify/', client_verify_code, name='client_verify_code'),
-    path('client_logout/', views.client_logout, name='Client_logout'),
+    path('client_logout/', views.client_logout, name='client_logout'),
     path('Client-Login/change_password/', views.client_change_password, name='change_password'),
     path('create_post/', views.new_post, name='New_Post'),
     path('car_list/', views.my_cars, name='cars_list'),

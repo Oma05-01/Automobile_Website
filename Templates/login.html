@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Log In - CarLease</title>
-    <link rel="stylesheet" href="{% static 'styles/login.css' %}">
+    <link rel="stylesheet" href="{% static 'styles/login.css' %}?v=1">
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
 </head>
 <body>
@@ -13,7 +13,7 @@
     <!-- Navbar -->
     <header class="navbar">
         <div class="container">
-            <div class="logo">CarLease</div>
+            <div class="logo"><a href="/">CarLease</a></div>
             <nav>
                 <ul>
                     <li><a href="#features">Features</a></li>
@@ -28,7 +28,13 @@
     <section class="login">
         <div class="container">
             <h2>Log In</h2>
-            <form method="POST">
+
+            <!-- Error Message (hidden initially) -->
+            <div id="error-message" class="alert" style="display:none;">
+                <p class="alert-message">Invalid credentials. Please try again.</p>
+            </div>
+
+            <form id="login-form" method="POST">
                 {% csrf_token %}
                 <div class="form-group">
                     <label for="username">Username</label>
@@ -49,6 +55,40 @@
             <p>&copy; 2024 CarLease. All Rights Reserved.</p>
         </div>
     </footer>
+
+    <!-- JS for handling form submission and response -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            // Handle form submission
+            $('#login-form').on('submit', function(e) {
+                e.preventDefault(); // Prevent form from submitting normally
+
+                // Get form data
+                var formData = $(this).serialize();
+
+                // Send POST request with form data
+                $.ajax({
+                    url: '',  // Current page URL (POST to the same page)
+                    type: 'POST',
+                    data: formData,
+                    success: function(response) {
+                        if (response.status === 'success') {
+                            // Redirect to the appropriate page based on the redirect_url
+                            window.location.href = response.redirect_url;
+                        } else if (response.status === 'error') {
+                            // Show error message if login fails
+                            $('#error-message').show();
+                        }
+                    },
+                    error: function() {
+                        // Handle any AJAX errors (optional)
+                        alert('An error occurred. Please try again later.');
+                    }
+                });
+            });
+        });
+    </script>
 
 </body>
 </html>

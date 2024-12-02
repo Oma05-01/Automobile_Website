@@ -109,3 +109,20 @@ a.add-car:hover {
         font-size: 1rem;
     }
 }
+
+.go-to-home-btn {
+  display: inline-block;
+  background-color: #4CAF50; /* Green background */
+  color: white;
+  padding: 10px 20px;
+  text-align: center;
+  border-radius: 5px;
+  text-decoration: none;
+  margin-top: 20px;
+  font-size: 16px;
+}
+
+.go-to-home-btn:hover {
+  background-color: #45a049; /* Darker green on hover */
+}
+

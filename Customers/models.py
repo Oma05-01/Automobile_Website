@@ -4,6 +4,7 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 import logging
 from clients.models import Car
+from phonenumber_field.modelfields import PhoneNumberField
 
 
 # Create your models here.
@@ -13,7 +14,7 @@ class Customer(models.Model):
     Last_name = models.CharField(max_length=30)
     username = models.CharField(max_length=30)
     email = models.EmailField(default='pass@gmail.com')
-    phone_number = models.IntegerField()
+    phone_number = PhoneNumberField(null=True, blank=True)
     date_created = models.DateField(auto_now_add=True)
     is_customer = models.BooleanField(default=True)
 
@@ -23,8 +24,9 @@ class Customer(models.Model):
 
 class CustomerProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='customer_profile')
-    phone_number = models.CharField(max_length=15, null=True, blank=True)
+    phone_number = PhoneNumberField(null=True, blank=True)
     address = models.TextField(null=True, blank=True)
+    verification_code = models.CharField(max_length=6, blank=True, null=True)
     receive_notifications = models.BooleanField(default=True)  # Option to receive notifications
     driver_license = models.ImageField(upload_to='licenses/', null=True,
                                        blank=True)  # Optional field for driver's license

@@ -1,7 +1,5 @@
 from django.core.exceptions import ValidationError
 
-from django.core.exceptions import ValidationError
-
 
 def validate_license(image):
     """

@@ -7,7 +7,7 @@ from django.contrib.auth import authenticate, login
 from django.contrib import messages
 from clients.models import Client
 from Customers.models import Customer
-
+from django.http import JsonResponse
 
 def main(request):
 
@@ -18,6 +18,10 @@ def profiles_exp(request):
 
     return render(request, 'profile_explanation.html')
 
+
+from django.contrib.auth import authenticate, login
+from django.http import JsonResponse
+from django.shortcuts import render, redirect
 
 def user_login(request):
     if request.method == "POST":
@@ -32,28 +36,23 @@ def user_login(request):
             # Log the user in
             login(request, user)
 
-            # Check if the user is a Customer or Client
+            # Check if the user is a Customer or Client and send the appropriate redirect URL
             try:
                 customer_profile = Customer.objects.get(user=user)
-                # Redirect to the customer dashboard
-                return redirect('CUhome')  # Replace with your customer dashboard URL
+                # Send a response with the redirect URL for the customer dashboard
+                return JsonResponse({'status': 'success', 'redirect_url': '/customer_home/'})  # Adjust the URL
             except Customer.DoesNotExist:
                 pass  # Not a customer, continue to check client profile
 
             try:
                 client_profile = Client.objects.get(user=user)
-                # Redirect to the client dashboard
-                return redirect('CLhome')  # Replace with your client dashboard URL
+                # Send a response with the redirect URL for the client dashboard
+                return JsonResponse({'status': 'success', 'redirect_url': '/client_home/'})  # Adjust the URL
             except Client.DoesNotExist:
                 pass  # Not a client, continue to check other profiles
 
-            # If no profile is found, show an error
-            messages.error(request, "You don't have a valid profile.")
-            return redirect('login')  # Redirect to login page
-
-        else:
-            # Authentication failed
-            messages.error(request, "Invalid username or password.")
-            return redirect('login')  # Redirect to login page
+        # If authentication fails or no valid profile is found, return error
+        return JsonResponse({'status': 'error', 'message': 'Invalid credentials.'})
 
     return render(request, 'login.html')  # Render the login form page
+
