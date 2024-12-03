@@ -1,5 +1,5 @@
 databases:
-  - name: CarLeasedb
+  - name: carlease_db
     plan: free
     databaseName: carlease_db
     user: carlease_user
