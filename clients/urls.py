@@ -1,6 +1,8 @@
 from django.urls import path
 from . import views
 from .views import client_verify_code
+from django.conf import settings
+from django.conf.urls.static import static
 
 urlpatterns = [
     # path('home/<str:icon>', views.client_home, name='home'),
@@ -23,3 +25,6 @@ urlpatterns = [
     path('send-message/<int:pk>/', views.send_message, name='send_message'),
 
 ]
+
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

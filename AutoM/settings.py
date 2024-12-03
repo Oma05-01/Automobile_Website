@@ -173,9 +173,6 @@ STATICFILES_DIRS = [
     BASE_DIR / 'static',  # project-level static files directory
 ]
 
-# Static root directory where static files will be collected to during production
-STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')  # Only for production use
-
 
 MEDIA_URL = 'media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
