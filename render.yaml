@@ -1,20 +1,20 @@
 databases:
-  - name: carlease_db
+  - name: AutoM
     plan: free
-    databaseName: carlease_db
-    user: carlease_user
+    databaseName: AutoM
+    user: AutoM
 
 services:
   - type: web
     plan: free
-    name: CarLease
+    name: AutoM
     runtime: python
     buildCommand: "./build.sh"
     startCommand: "python -m gunicorn AutoM.asgi:application -k uvicorn.workers.UvicornWorker"
     envVars:
       - key: DATABASE_URL
         fromDatabase:
-          name: carlease_db
+          name: AutoM
           property: connectionString
       - key: SECRET_KEY
         generateValue: true
